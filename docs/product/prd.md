@@ -1,6 +1,6 @@
 # 📄 PRD — SFOOD IT Tech Blog
 
-> 전체 진행률: 0 / 26 항목 완료 (최근 갱신: 2026-08-05)
+> 전체 진행률: 2 / 26 항목 완료 (최근 갱신: 2026-08-05)
 
 ## 🎯 서비스 정의
 
@@ -205,11 +205,11 @@
 ## ✅ 단계별 진행 체크리스트
 
 ### Phase 1 — 기반 설정
-- [ ] (대기) Next.js 프로젝트 초기 설정 및 GitHub Actions + Vercel CI/CD 구성 — 산출물: (없음)
-- [ ] (대기) Microsoft Entra ID OIDC + Auth.js(NextAuth) 로그인 연동 — 산출물: (없음)
-- [ ] (대기) Confluence 서비스 계정 API 토큰 발급 및 연결 확인 — 산출물: (없음)
-- [ ] (대기) Slack Incoming Webhook 채널 연결 확인 — 산출물: (없음)
-- [ ] (대기) 환경변수/시크릿 관리 체계 구성 — 산출물: (없음)
+- [x] (완료) Next.js 프로젝트 초기 설정 및 GitHub Actions CI 구성 — 산출물: package.json, tsconfig.json, next.config.ts, eslint.config.mjs, src/app/(layout.tsx, page.tsx, globals.css), .github/workflows/ci.yml (Vercel 프로젝트 연결은 Vercel 대시보드에서 사용자가 직접 수행해야 하는 외부 작업으로 범위 제외 — docs/tasks/phase-1/result.md 참고)
+- [ ] (진행중) Microsoft Entra ID OIDC + Auth.js(NextAuth) 로그인 연동 — 산출물: src/lib/auth.ts, src/app/api/auth/[...nextauth]/route.ts (코드 구현 완료, 실제 Azure AD 자격증명으로 로그인 검증은 대기)
+- [ ] (진행중) Confluence 서비스 계정 API 토큰 발급 및 연결 확인 — 산출물: src/lib/confluence/client.ts, src/app/api/health/confluence/route.ts (코드 구현 완료, 실제 토큰 발급·연결 확인은 대기)
+- [ ] (진행중) Slack Incoming Webhook 채널 연결 확인 — 산출물: src/lib/notifications/slack.ts (코드 구현 완료, 실제 Webhook URL 연결 확인은 대기)
+- [x] (완료) 환경변수/시크릿 관리 체계 구성 — 산출물: src/lib/env.ts, .env.example
 
 ### Phase 2 — Editor 핵심 기능
 - [ ] (대기) 로그인 사용자 개인 폴더 확인/생성 구현 — 산출물: (없음)

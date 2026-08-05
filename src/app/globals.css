@@ -1,0 +1,17 @@
+:root {
+  --color-background: #ffffff;
+  --color-text-primary: #54585a;
+  --color-brand: #e4002b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: "맑은고딕", Pretendard, -apple-system, system-ui, Roboto, "Helvetica Neue", sans-serif;
+  font-weight: 500;
+}
