@@ -1,6 +1,6 @@
 # 📄 PRD — SFOOD IT Tech Blog
 
-> 전체 진행률: 2 / 26 항목 완료 (최근 갱신: 2026-08-05)
+> 전체 진행률: 2 / 26 항목 완료 (최근 갱신: 2026-08-12, Phase 2는 코드 구현 완료·실 Confluence 연동 검증 대기)
 
 ## 🎯 서비스 정의
 
@@ -212,12 +212,12 @@
 - [x] (완료) 환경변수/시크릿 관리 체계 구성 — 산출물: src/lib/env.ts, .env.example
 
 ### Phase 2 — Editor 핵심 기능
-- [ ] (대기) 로그인 사용자 개인 폴더 확인/생성 구현 — 산출물: (없음)
-- [ ] (대기) 문서 탐색기(폴더/페이지 트리) 조회 화면 구현 — 산출물: (없음)
-- [ ] (대기) 문서 작성·저장 기능(Markdown/블록 편집기) 구현 — 산출물: (없음)
-- [ ] (대기) 문서 수정 기능 구현 — 산출물: (없음)
-- [ ] (대기) 이미지 등록 기능 구현 — 산출물: (없음)
-- [ ] (대기) 게시 상태·노출 Viewer·공개 경로/SEO 메타 설정 기능 구현 — 산출물: (없음)
+- [ ] (진행중) 로그인 사용자 개인 폴더 확인/생성 구현 — 산출물: `src/lib/editor/folder.ts`, `src/app/api/editor/folder/route.ts`, `src/app/editor/page.tsx` (코드 구현 완료, 실 Confluence Space 연동 검증은 대기)
+- [ ] (진행중) 문서 탐색기(폴더/페이지 트리) 조회 화면 구현 — 산출물: `src/lib/editor/documents.ts`(listDocuments), `src/app/api/editor/documents/route.ts`(GET), `src/app/editor/page.tsx` (코드 구현 완료, 실 연동 검증은 대기)
+- [ ] (진행중) 문서 작성·저장 기능(Markdown/블록 편집기) 구현 — 산출물: `src/lib/editor/markdown.ts`, `src/lib/editor/documents.ts`(createDocument), `src/app/api/editor/documents/route.ts`(POST), `src/app/editor/new/page.tsx`, `src/components/editor/DocumentEditor.tsx` (Markdown 텍스트 편집 수준의 최소 구현, 실 연동 검증은 대기)
+- [ ] (진행중) 문서 수정 기능 구현 — 산출물: `src/lib/editor/documents.ts`(updateDocument, 버전 충돌 409 포함), `src/app/api/editor/documents/[pageId]/route.ts`, `src/app/editor/[pageId]/page.tsx` (코드 구현 완료, 실 연동·버전 충돌 재현 검증은 대기)
+- [ ] (진행중) 이미지 등록 기능 구현 — 산출물: `src/lib/editor/images.ts`, `src/app/api/editor/documents/[pageId]/images/route.ts` (Confluence v1 첨부파일 API 사용, 실 연동 검증은 대기)
+- [ ] (진행중) 게시 상태·노출 Viewer·공개 경로/SEO 메타 설정 기능 구현 — 산출물: `src/lib/editor/publish.ts`, `src/app/api/editor/documents/[pageId]/publish/route.ts`, `src/app/editor/[pageId]/publish/page.tsx`, `src/components/editor/PublishForm.tsx` (코드 구현 완료, slug 중복 검사 등 실 연동 검증은 대기)
 
 ### Phase 3 — Viewer 핵심 기능
 - [ ] (대기) 게시 문서 목록 조회 화면 구현 — 산출물: (없음)
