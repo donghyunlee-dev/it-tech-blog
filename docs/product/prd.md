@@ -1,6 +1,6 @@
 # 📄 PRD — SFOOD IT Tech Blog
 
-> 전체 진행률: 2 / 27 항목 완료 (최근 갱신: 2026-08-18, Phase 2는 코드 구현 완료·실 Confluence 연동 검증 대기. 로그인 연동은 AX Auth 경유 방식으로 재확정되어 재구현 필요, 댓글 알림 메일 발송 기능 신규 추가)
+> 전체 진행률: 2 / 27 항목 완료 (최근 갱신: 2026-08-18, Phase 2는 코드 구현 완료·실 Confluence 연동 검증 대기. 로그인 연동은 AX Auth 경유 방식으로 재구현 완료·실 자격증명 연동 검증 대기, 댓글 알림 메일 발송 기능 신규 추가)
 
 ## 🎯 서비스 정의
 
@@ -217,7 +217,7 @@
 
 ### Phase 1 — 기반 설정
 - [x] (완료) Next.js 프로젝트 초기 설정 및 GitHub Actions CI 구성 — 산출물: package.json, tsconfig.json, next.config.ts, eslint.config.mjs, src/app/(layout.tsx, page.tsx, globals.css), .github/workflows/ci.yml (Vercel 프로젝트 연결은 Vercel 대시보드에서 사용자가 직접 수행해야 하는 외부 작업으로 범위 제외 — docs/tasks/phase-1/result.md 참고)
-- [ ] (진행중 → 재구현 필요) AX Auth 경유 로그인 연동(Auth.js/NextAuth 세션 생성) — 산출물: src/lib/auth.ts, src/app/api/auth/[...nextauth]/route.ts, src/app/api/auth/ax-callback/route.ts(신규) (기존 코드는 Azure AD 직접 OIDC 연동 기준으로 작성되어 있어 단순 검증이 아니라 AX Auth 리다이렉트 방식(`login_token` 서버 검증, api-spec.md의 `GET /api/auth/ax-callback` 참고)에 맞춘 재구현이 필요. 신규 환경변수 `AX_AUTH_CLIENT_ID`, `AX_AUTH_CLIENT_SECRET`, `AX_AUTH_BASE_URL`을 src/lib/env.ts·.env.example에 추가해야 함 — [login-integration-guide.md](login-integration-guide.md) 참고)
+- [ ] (진행중) AX Auth 경유 로그인 연동(Auth.js/NextAuth 세션 생성) — 산출물: `src/lib/ax-auth/client.ts`, `src/lib/auth.ts`(Credentials Provider로 재작성), `src/app/api/auth/ax-callback/route.ts`(신규), `src/app/login/page.tsx`, `.env.example` (AX Auth 리다이렉트 방식으로 재구현 완료 — `docs/tasks/phase-1-ax-auth-login/` 참고. 콜백 쿼리 파라미터명·`/auth/token/verify` 응답 스키마는 추정치이며, 실제 AX Auth 자격증명(clientId/clientSecret/redirect_uri 등록)이 없어 실 로그인 왕복 검증은 대기)
 - [ ] (진행중) Confluence 서비스 계정 API 토큰 발급 및 연결 확인 — 산출물: src/lib/confluence/client.ts, src/app/api/health/confluence/route.ts (코드 구현 완료, 실제 토큰 발급·연결 확인은 대기)
 - [ ] (진행중) Slack Incoming Webhook 채널 연결 확인 — 산출물: src/lib/notifications/slack.ts (코드 구현 완료, 실제 Webhook URL 연결 확인은 대기)
 - [x] (완료) 환경변수/시크릿 관리 체계 구성 — 산출물: src/lib/env.ts, .env.example
