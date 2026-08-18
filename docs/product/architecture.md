@@ -9,7 +9,7 @@
 - 실행 환경: 웹 브라우저 (URL 기반 공개 서비스, SEO 요구사항 존재)
 - 사용자 규모: 소규모 팀(2~10명) — 동시성·확장성보다 단순한 구조와 빠른 구현을 우선
 - 데이터 저장: 별도 DB 없음 — Confluence가 저장소 역할을 전담
-- 로그인: 사내 SSO(MS 계정), Editor·Comment 작성자 인증에 사용, Viewer 열람은 비로그인 공개
+- 로그인: 사내 SSO(MS 계정), Editor·Comment 작성자 인증에 사용, Viewer 열람은 비로그인 공개. 서비스가 Azure AD와 직접 OIDC 연동을 구성할 수 없어, 사내 공통 인증 서비스인 AX Auth가 Azure AD 로그인을 대행하고 그 결과(login_token)를 우리 서비스가 검증하는 방식을 사용한다(상세: [login-integration-guide.md](login-integration-guide.md))
 - 자동화: 이상 감지(Confluence 연동 실패 등 운영 이슈 탐지) → Slack으로 전달
 - 배포: 클라우드, 단일 환경(스테이징 미분리), Git 기반 CI/CD
 - 일정: 2주 이내(급함) → 최소 구성으로 빠르게 구현 가능한 구조 우선
@@ -54,7 +54,7 @@
 | 프론트엔드 | Next.js (React, TypeScript) | Editor(로그인 후 SPA形 편집 UI)와 Viewer(SEO를 위한 서버 렌더링)를 하나의 프레임워크로 함께 처리 가능. 2주 일정에 맞춰 프론트/백엔드를 한 저장소에서 빠르게 구성할 수 있음 |
 | 백엔드 | Next.js Route Handlers (Node.js) | 별도 백엔드 서버 없이 Confluence API 호출, MS SSO 토큰 검증, 댓글 처리 로직을 같은 애플리케이션 내에서 처리. 소규모 팀·짧은 일정에 적합 |
 | 데이터 저장 | 없음 (Confluence API가 저장소 역할) | 요구사항대로 Editor·Comment가 생성하는 데이터는 모두 Confluence에 저장. 다만 Viewer의 반복 조회 성능을 위해 Next.js의 ISR(증분 정적 재생성)·엣지 캐시를 활용해 Confluence 응답을 짧은 주기로 캐싱 (별도 DB는 아님) |
-| 인증 | Microsoft Entra ID(Azure AD) OIDC + Auth.js(NextAuth) | 사내 SSO 요구사항을 표준 OIDC 플로우로 구현. Editor·Comment 접근 시 세션 검증에 사용, Viewer는 인증 미적용 |
+| 인증 | AX Auth(사내 공통 인증 서비스) 경유 + Auth.js(NextAuth) | Azure AD와 직접 OIDC 연동이 불가능하여, AX Auth가 Azure AD 로그인을 대행한다. 백엔드(Next.js Route Handlers)가 있으므로 리다이렉트 방식(서버에서 `clientSecret`과 함께 `login_token` 검증)으로 연동하고, 검증 결과로 Auth.js(NextAuth) 세션을 생성한다. Editor·Comment 접근 시 세션 검증에 사용, Viewer는 인증 미적용. 상세: [login-integration-guide.md](login-integration-guide.md) |
 | Confluence 연동 | Confluence Cloud REST API v2, 서비스 계정 API 토큰 | "프로젝트 담당자의 단일 Confluence 계정"으로 연결한다는 요구사항을 그대로 반영. 토큰은 서버 환경변수/시크릿 매니저에만 보관 |
 | 배포 환경 | Vercel (Next.js 표준 배포 대상) | Git push 기반 자동 배포로 2주 내 구축에 가장 적합. 대안으로 Azure App Service/Static Web Apps도 고려했으나(사내 MS 생태계와의 친화성), 초기 구축 속도에서 Vercel을 우선 제안 (트레이드오프 참고) |
 | CI/CD | GitHub Actions + Vercel Git 연동 | 코드 버전 관리를 이미 사용하므로 main 브랜치 push 시 자동 배포. PR마다 생성되는 Preview 배포를 임시 검증 수단으로 활용(정식 스테이징 환경은 두지 않음) |
@@ -69,13 +69,13 @@
 - 자체 데이터베이스는 두지 않는다. 소규모 팀 규모와 짧은 일정을 고려할 때 DB 운영·마이그레이션 부담을 줄이는 것이 합리적이다.
 
 **인증 방식**
-- Editor, Comment: Microsoft Entra ID 기반 사내 SSO 로그인 필수. 로그인 성공 시 발급되는 사용자 메일/이름을 실제 작성자 정보로 사용하고, Confluence에는 단일 서비스 계정으로 기록하되 애플리케이션 레벨에서 실제 작성자를 구분해 표시한다.
+- Editor, Comment: 사내 SSO(MS 계정) 로그인 필수. Azure AD와 직접 OIDC 연동을 구성하지 않고, AX Auth가 Azure AD 로그인을 대행한 뒤 발급하는 `login_token`을 백엔드가 `clientSecret`과 함께 검증(리다이렉트 방식)하여 세션을 생성한다. 로그인 성공 시 확인되는 사용자 메일/이름을 실제 작성자 정보로 사용하고, Confluence에는 단일 서비스 계정으로 기록하되 애플리케이션 레벨에서 실제 작성자를 구분해 표시한다. 연동 상세는 [login-integration-guide.md](login-integration-guide.md) 참고.
 - Comment 외부 사용자: 로그인 없이 이름·이메일을 필수 입력받아 MS 계정 사용자와 동일한 구조(이름·이메일·댓글)로 저장한다. 이메일 형식 검증과 필수값 체크를 클라이언트/서버 양쪽에서 수행한다.
 - Viewer: 인증 없이 게시된 문서만 공개 열람.
 
 ## 알림 및 자동화
 
-- **사용자 대상 알림은 없음** (알림 필요 없음으로 확인됨).
+- **댓글 알림 메일**: MS 로그인 사용자가 댓글을 작성하면, 해당 문서(블로그 글) 작성자의 이메일로 알림 메일을 발송한다. 발신자는 항상 "그 순간 로그인되어 있는 댓글 작성자 계정"이며(AX Auth 메일 발송 정책상 고정 발신 계정 사용 불가), 댓글 생성 처리 흐름 안에서 그 세션의 `login_token`을 이용해 즉시 발송을 트리거한다(`login_token`은 발급 후 180초 이내·1회성이므로 지연 발송 불가). 외부(비로그인) 사용자 댓글은 AX Auth 로그인 세션이 없어 이 방식으로 발송할 수 없으므로 알림 대상에서 제외한다. 연동 상세는 [mail-integration-guide.md](mail-integration-guide.md) 참고.
 - **이상 감지 자동화**: Confluence API 호출 실패(게시 실패, 인증 만료, rate limit 초과), 댓글 저장 실패, 외부 사용자의 비정상적 반복 요청(스팸성 댓글) 등을 서버 측에서 감지하여 Slack Webhook으로 운영팀에 전달한다. 이는 최종 사용자에게 노출되는 알림이 아니라 IT팀을 위한 운영 모니터링 성격의 자동화다.
 - 정기 실행형 배치나 대량 리포트 발송은 요구사항에 없으므로 구현하지 않는다.
 
@@ -109,4 +109,4 @@
 - **자체 DB 미도입 vs 캐시 계층 도입**: 요구사항과 사용자 규모(소규모 팀)를 고려해 자체 DB를 두지 않기로 했다. 다만 댓글/문서 수가 늘어나 Confluence API 반복 호출이 느려지면, 원 요구사항에서 언급한 대로 "전체 댓글을 한 번에 조회 후 계층 구성"하는 방식이나 짧은 TTL의 캐시(ISR)를 우선 도입하고, 그래도 부족하면 그때 경량 캐시 저장소(Redis 등) 도입을 재검토한다.
 - **Vercel vs Azure 계열 배포**: 회사가 이미 Microsoft 생태계(Entra ID)를 사용 중이므로 Azure App Service/Static Web Apps가 사내 네트워크 정책·인증 연동 측면에서 더 자연스러울 수 있다. 다만 2주라는 일정 제약과 Next.js와의 즉시성(Zero-config 배포, Git 연동) 때문에 Vercel을 우선 제안했다. 사내 보안 정책상 클라우드 벤더 제약이 있다면 Azure 계열로 전환을 검토해야 한다.
 - **스테이징 환경 부재**: 빠른 일정을 위해 별도 스테이징 환경을 두지 않기로 했으나, 이는 프로덕션 장애 위험을 감수하는 결정이다. PR Preview 배포와 코드 리뷰로 최소한의 안전장치를 두되, 서비스 안정화 이후에는 스테이징 환경 도입을 재고할 것을 권장한다.
-- **알림을 사용자에게 제공하지 않는 결정**: 초기 버전에서는 사용자 알림(댓글 알림 등)을 제공하지 않기로 했다. 추후 사용성 개선이 필요하면 이메일 또는 Slack 기반의 사용자 알림 기능을 별도 단계로 추가할 수 있다.
+- **댓글 알림 메일 발송 방식**: AX Auth 메일 발송 기능은 고정 서비스 계정이 아닌 "그 순간 로그인한 사용자" 명의로만 발송할 수 있고 `login_token`이 180초·1회성이므로, 댓글 생성 시점에 즉시 발송을 트리거하는 구조로만 구현 가능하다. 이 제약으로 인해 로그인하지 않은 외부 사용자의 댓글에는 알림 메일을 적용하지 못한다.

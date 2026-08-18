@@ -5,7 +5,7 @@
 본 문서는 Editor·Viewer·Comment가 사용하는 Next.js Route Handlers(자체 API) 명세를 다룬다. 이 API들은 내부적으로 Confluence Cloud REST API v2(서비스 계정 토큰 사용)를 호출하여 실제 데이터를 저장·조회한다.
 
 - **Base URL**: 서비스 배포 도메인(Vercel) 기준 `/api/...` (동일 오리진, 별도 API 서버 없음)
-- **인증 방식**: Microsoft Entra ID(Azure AD) OIDC 기반 Auth.js(NextAuth) 세션 쿠키. Editor 관련 API는 유효한 세션이 필수이며, Viewer 관련 API는 인증이 필요 없다. 외부 사용자 댓글 작성 API는 세션 대신 요청 본문의 이름·이메일로 작성자를 식별한다.
+- **인증 방식**: AX Auth(사내 공통 인증 서비스) 경유 로그인 결과로 발급되는 Auth.js(NextAuth) 세션 쿠키. Azure AD와 직접 OIDC 연동을 하지 않으며, 백엔드가 AX Auth의 `login_token`을 `clientSecret`과 함께 검증(리다이렉트 방식)한 뒤 세션을 생성한다. 상세는 [login-integration-guide.md](login-integration-guide.md) 참고. Editor 관련 API는 유효한 세션이 필수이며, Viewer 관련 API는 인증이 필요 없다. 외부 사용자 댓글 작성 API는 세션 대신 요청 본문의 이름·이메일로 작성자를 식별한다.
 - **공통 응답 형식**: JSON. 성공 시 요청한 리소스 또는 처리 결과를 반환하고, 실패 시 아래 공통 에러 형식을 사용한다.
 - **공통 에러 형식**:
   ```json
@@ -16,13 +16,15 @@
     }
   }
   ```
-- 로그인(Microsoft Entra ID OIDC) 자체는 Auth.js 표준 라우트(`/api/auth/[...nextauth]`)를 그대로 사용하며, 별도 커스텀 엔드포인트를 설계하지 않는다.
+- 로그인 세션 관리(로그인 상태 유지, 로그아웃 등)는 Auth.js 표준 라우트(`/api/auth/[...nextauth]`)를 그대로 사용한다. 다만 AX Auth를 경유하는 실제 인증 절차는 표준 Azure AD Provider로 처리할 수 없어, 아래 `GET /api/auth/ax-callback`을 통해 `login_token`을 검증한 뒤 그 결과로 NextAuth 세션(Credentials Provider 등)을 생성하는 커스텀 흐름을 사용한다.
 - Slack 이상 감지 알림은 사용자에게 노출되는 엔드포인트가 아니라, 아래 API들의 서버 내부 오류 처리 로직에서 Slack Incoming Webhook을 직접 호출하는 방식으로 동작한다.
+- 댓글 알림 메일 발송은 별도 엔드포인트 없이 `POST /api/comments` 처리 흐름 내부에서 AX Auth 메일 발송 API를 호출하는 방식으로 동작한다(해당 항목 참고).
 
 ## 엔드포인트 목록
 
 | Method | 경로 | 설명 | prd.md 관련 기능 |
 |---|---|---|---|
+| GET | /api/auth/ax-callback | AX Auth 로그인 콜백(`login_token` 검증 후 세션 생성) | MS SSO 로그인 |
 | GET | /api/editor/folder | 개인 폴더 확인 | 개인 폴더 확인/생성 |
 | POST | /api/editor/folder | 개인 폴더 생성 | 개인 폴더 확인/생성 |
 | GET | /api/editor/documents | 문서 목록 조회 | 문서 목록 조회(탐색기) |
@@ -39,6 +41,36 @@
 | POST | /api/comments | 댓글·대댓글 작성 | MS 로그인/외부 사용자 댓글 작성 |
 
 ## 엔드포인트 상세
+
+### GET /api/auth/ax-callback — AX Auth 로그인 콜백(신규)
+
+AX Auth에 `redirect_uri`로 등록해 둔 콜백 엔드포인트다. 로그인 완료 후 AX Auth가 브라우저를 이 경로로 리다이렉트하며, 서버는 전달받은 `login_token`을 `clientSecret`과 함께 검증한 뒤 NextAuth 세션을 생성한다.
+
+> 콜백 시 `login_token`이 전달되는 정확한 쿼리 파라미터명은 데모 가이드(`login-integration-guide.md`)에는 명시되어 있지 않다. AX팀이 제공하는 전체 연동 가이드(Spring Boot/React 코드 예제 포함)에서 확인 후 반영해야 한다.
+
+**Header**
+해당 없음(AX Auth가 브라우저 리다이렉트로 호출)
+
+**Request Body**
+해당 없음(쿼리스트링에 `login_token` 포함 — 파라미터명 확인 필요)
+
+**서버 내부 동작**
+```http
+POST https://ax-auth.s-food.ai/auth/token/verify
+Content-Type: application/json
+
+{ "clientId": "...", "clientSecret": "...", "loginToken": "콜백으로 받은 토큰" }
+```
+검증 성공(`valid: true`) 시 응답의 사용자 메일/이름으로 NextAuth 세션을 생성하고 Editor 탐색기로 리다이렉트한다.
+
+**Response(성공)**: 302 리다이렉트 → `/editor`
+
+**Response(실패)**
+| 사유(`reason`) | 처리 |
+|---|---|
+| `TOKEN_EXPIRED` | 로그인 화면으로 리다이렉트, "로그인이 만료되었습니다. 다시 시도해 주세요" 안내 |
+| `TOKEN_ALREADY_USED` | 로그인 화면으로 리다이렉트, 동일 안내 |
+| `TOKEN_NOT_FOUND` | 로그인 화면으로 리다이렉트, 동일 안내 |
 
 ### GET /api/editor/folder — 개인 폴더 확인
 
@@ -399,6 +431,16 @@
 | 404 | 문서 없음 | 존재하지 않는 pageId 또는 parentCommentId |
 | 429 | 요청 과다 | 외부 사용자 rate limiting 초과(스팸성 댓글 방지) |
 | 502 | 연동 실패 | Confluence API 호출 실패 |
+
+**댓글 알림 메일 발송(내부 동작)**
+
+댓글 저장이 성공하고 작성자가 MS 로그인 사용자인 경우(`Cookie(세션)` 존재), 응답을 반환하기 전후로 다음 내부 절차를 수행한다.
+
+1. 요청의 `pageId`로 [data-spec.md](data-spec.md)의 Document를 조회해 `actualAuthorEmail`(문서 작성자 이메일)을 확보한다.
+2. [mail-integration-guide.md](mail-integration-guide.md)의 `POST /mail/send`를 호출해 발신자 = 댓글 작성자, 수신자 = 위에서 확보한 `actualAuthorEmail`로 알림 메일을 발송한다.
+3. 메일 발송 실패는 댓글 저장 결과(위 Response Body/상태 코드)에 영향을 주지 않으며, 서버 로그에만 기록한다.
+
+메일 발송에 사용할 `login_token` 확보 방식(원 로그인 세션의 `login_token`은 TTL 180초로 이미 소멸되어 있을 가능성이 높음)은 아직 검증되지 않은 사항이며, [architecture.md](architecture.md)의 트레이드오프 항목 참고.
 
 ## 작성 시 주의할 점 관련 근거
 

@@ -1,6 +1,6 @@
 # 📄 PRD — SFOOD IT Tech Blog
 
-> 전체 진행률: 2 / 26 항목 완료 (최근 갱신: 2026-08-12, Phase 2는 코드 구현 완료·실 Confluence 연동 검증 대기)
+> 전체 진행률: 2 / 27 항목 완료 (최근 갱신: 2026-08-18, Phase 2는 코드 구현 완료·실 Confluence 연동 검증 대기. 로그인 연동은 AX Auth 경유 방식으로 재확정되어 재구현 필요, 댓글 알림 메일 발송 기능 신규 추가)
 
 ## 🎯 서비스 정의
 
@@ -8,7 +8,7 @@
 
 서비스는 문서 작성·게시를 담당하는 **Editor**, 게시된 문서를 노출하는 **Viewer**, Viewer에 연결되는 **Comment**로 구성한다. Editor와 Comment에서 생성한 모든 데이터는 Confluence API를 통해 저장하고 조회한다.
 
-- 관련 문서: [requirements.md](requirements.md), [architecture.md](architecture.md)
+- 관련 문서: [requirements.md](requirements.md), [architecture.md](architecture.md), [login-integration-guide.md](login-integration-guide.md), [mail-integration-guide.md](mail-integration-guide.md)
 
 ## 🖥️ 화면 정의
 
@@ -28,7 +28,8 @@
 
 - **프론트엔드/백엔드**: Next.js(React, TypeScript) 단일 저장소. 백엔드는 별도 서버 없이 Next.js Route Handlers(Node.js)로 구성.
 - **데이터 저장**: 자체 DB 없음. Confluence REST API v2가 저장소 역할을 전담하며, Viewer 반복 조회 성능을 위해 Next.js ISR/엣지 캐시를 활용한다. 상세 데이터 구조는 [data-spec.md](data-spec.md) 참고.
-- **인증**: Microsoft Entra ID(Azure AD) OIDC + Auth.js(NextAuth). Editor·Comment는 인증 필수, Viewer는 비로그인 공개.
+- **인증**: 사내 SSO(MS 계정) 로그인이되, Azure AD와 직접 OIDC 연동은 하지 않는다. 사내 공통 인증 서비스인 AX Auth가 Azure AD 로그인을 대행하고, 백엔드가 리다이렉트 방식으로 `login_token`을 검증해 Auth.js(NextAuth) 세션을 생성한다. Editor·Comment는 인증 필수, Viewer는 비로그인 공개. 연동 상세는 [login-integration-guide.md](login-integration-guide.md) 참고.
+- **댓글 알림 메일**: 댓글 작성 시 문서 작성자에게 보내는 알림 메일 발송에 AX Auth 메일 발송 기능을 사용한다. 발신자는 로그인한 댓글 작성자, 수신자는 문서 작성자 이메일이며, MS 로그인 사용자 댓글에만 적용된다(외부 사용자 댓글은 로그인 세션이 없어 제외). 연동 방식·제약 사항은 [mail-integration-guide.md](mail-integration-guide.md) 참고.
 - **Confluence 연동**: Confluence Cloud REST API v2, 프로젝트 담당자의 단일 서비스 계정 API 토큰 사용. 토큰은 서버 환경변수/시크릿 매니저에만 보관.
 - **배포/CI-CD**: Vercel + GitHub Actions, main 브랜치 push 시 자동 배포. 별도 스테이징 환경 없이 PR Preview 배포로 검증.
 - **운영 알림**: Confluence 연동 실패 등 이상 감지 시 Slack Incoming Webhook으로 운영팀에 알림.
@@ -43,6 +44,7 @@
 - 예외 상황: 인증 실패 시 로그인 화면으로 재이동 및 오류 안내
 - 데이터 저장 여부: 아니오
 - API 필요 여부: 예 — api-spec.md의 인증 라우트(Auth.js 표준 라우트) 참고
+- 참고: Azure AD 직접 연동이 아닌 AX Auth 경유(리다이렉트 방식) 연동이며, 기술 스펙은 [login-integration-guide.md](login-integration-guide.md) 참고
 
 ### 기능 — 개인 폴더 확인/생성
 - 설명: 로그인한 사용자의 메일 계정을 기준으로 Confluence Space 내 개인 폴더를 확인하고, 없으면 생성한다.
@@ -172,6 +174,15 @@
 - 데이터 저장 여부: 아니오(조회 방식 개선)
 - API 필요 여부: 아니오(기존 `/api/comments` 내부 구현 개선)
 
+### 기능 — 댓글 알림 메일 발송
+- 설명: MS 로그인 사용자가 댓글을 작성하면 해당 문서(블로그 글) 작성자에게 알림 메일을 발송한다. AX Auth 메일 발송 기능을 사용하며, 연동 상세는 [mail-integration-guide.md](mail-integration-guide.md) 참고.
+- 입력: 댓글 작성자의 `login_token`(그 순간 로그인 세션), 대상 문서 작성자의 이메일, 댓글 본문(메일 내용 구성용)
+- 출력·동작: 발신자 = 로그인한 댓글 작성자, 수신자 = 문서 작성자 이메일로 알림 메일 발송. 댓글 생성 처리 흐름 안에서 해당 세션의 `login_token`을 이용해 즉시 발송을 트리거한다(`login_token`은 발급 후 180초 이내·1회성이므로 지연 발송 불가).
+- 예외 상황: MAIL scope 미부여, 토큰 만료·중복 사용, 첨부 조건 초과 등 실패 시 서버 로그에 기록하고 댓글 작성 자체는 정상 처리(메일 발송 실패가 댓글 등록을 막지 않음)
+- 적용 범위: MS 로그인 사용자 댓글에만 적용. 외부(비로그인) 사용자 댓글은 AX Auth 로그인 세션이 없어 이 방식으로 발송할 수 없으므로 알림 대상에서 제외한다.
+- 데이터 저장 여부: 아니오(발송 로그는 AX Auth 서버 측 `mail_send_log`에 기록됨)
+- API 필요 여부: 아니오 — 신규 엔드포인트 없이 기존 `POST /api/comments` 처리 흐름 내에서 발송 트리거
+
 ### 기능 — 이상 감지 → Slack 알림
 - 설명: Confluence API 호출 실패(게시 실패, 인증 만료, rate limit 초과), 댓글 저장 실패, 외부 사용자의 비정상적 반복 요청 등을 서버에서 감지하여 Slack Webhook으로 운영팀에 전달한다.
 - 입력: 서버 내부 오류·이상 이벤트
@@ -196,7 +207,7 @@
 
 ### Phase 4 — Comment 기능
 - 목표: MS 로그인 사용자와 외부 사용자 모두 댓글을 작성하고 계층 구조로 열람할 수 있게 한다.
-- 포함 기능: MS 로그인 사용자 댓글 작성, 외부 사용자 댓글 작성, 대댓글 및 댓글 계층 조회, 댓글 조회 성능 최적화
+- 포함 기능: MS 로그인 사용자 댓글 작성, 외부 사용자 댓글 작성, 대댓글 및 댓글 계층 조회, 댓글 조회 성능 최적화, 댓글 알림 메일 발송
 
 ### Phase 5 — 운영 자동화 및 마무리
 - 목표: 운영 이상 감지 체계를 갖추고 전체 기능을 통합 검증하여 서비스를 안정적으로 배포한다.
@@ -206,7 +217,7 @@
 
 ### Phase 1 — 기반 설정
 - [x] (완료) Next.js 프로젝트 초기 설정 및 GitHub Actions CI 구성 — 산출물: package.json, tsconfig.json, next.config.ts, eslint.config.mjs, src/app/(layout.tsx, page.tsx, globals.css), .github/workflows/ci.yml (Vercel 프로젝트 연결은 Vercel 대시보드에서 사용자가 직접 수행해야 하는 외부 작업으로 범위 제외 — docs/tasks/phase-1/result.md 참고)
-- [ ] (진행중) Microsoft Entra ID OIDC + Auth.js(NextAuth) 로그인 연동 — 산출물: src/lib/auth.ts, src/app/api/auth/[...nextauth]/route.ts (코드 구현 완료, 실제 Azure AD 자격증명으로 로그인 검증은 대기)
+- [ ] (진행중 → 재구현 필요) AX Auth 경유 로그인 연동(Auth.js/NextAuth 세션 생성) — 산출물: src/lib/auth.ts, src/app/api/auth/[...nextauth]/route.ts, src/app/api/auth/ax-callback/route.ts(신규) (기존 코드는 Azure AD 직접 OIDC 연동 기준으로 작성되어 있어 단순 검증이 아니라 AX Auth 리다이렉트 방식(`login_token` 서버 검증, api-spec.md의 `GET /api/auth/ax-callback` 참고)에 맞춘 재구현이 필요. 신규 환경변수 `AX_AUTH_CLIENT_ID`, `AX_AUTH_CLIENT_SECRET`, `AX_AUTH_BASE_URL`을 src/lib/env.ts·.env.example에 추가해야 함 — [login-integration-guide.md](login-integration-guide.md) 참고)
 - [ ] (진행중) Confluence 서비스 계정 API 토큰 발급 및 연결 확인 — 산출물: src/lib/confluence/client.ts, src/app/api/health/confluence/route.ts (코드 구현 완료, 실제 토큰 발급·연결 확인은 대기)
 - [ ] (진행중) Slack Incoming Webhook 채널 연결 확인 — 산출물: src/lib/notifications/slack.ts (코드 구현 완료, 실제 Webhook URL 연결 확인은 대기)
 - [x] (완료) 환경변수/시크릿 관리 체계 구성 — 산출물: src/lib/env.ts, .env.example
@@ -233,6 +244,7 @@
 - [ ] (대기) 외부 사용자(이름·이메일) 댓글 작성 구현 — 산출물: (없음)
 - [ ] (대기) 대댓글 및 댓글 계층 조회(재귀적 parentCommentId) 구현 — 산출물: (없음)
 - [ ] (대기) 댓글 조회 성능 최적화(전체 조회 후 계층 구성 전환 검토) — 산출물: (없음)
+- [ ] (대기) 댓글 알림 메일 발송(AX Auth 메일 발송 연동, MS 로그인 사용자 댓글에 한함) — 산출물: (없음)
 
 ### Phase 5 — 운영 자동화 및 마무리
 - [ ] (대기) Confluence 연동 실패 등 이상 감지 → Slack 알림 연동 — 산출물: (없음)
