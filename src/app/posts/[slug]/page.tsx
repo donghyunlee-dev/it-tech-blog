@@ -5,6 +5,7 @@ import { getPublishedPostBySlug, PublishedPostDetail } from "@/lib/viewer/posts"
 import { NotFoundError } from "@/lib/errors";
 import { RELATED_SITES } from "@/lib/viewer/related-sites";
 import { auth } from "@/lib/auth";
+import { getAxAuthLoginUrl } from "@/lib/ax-auth/client";
 import { CommentSection } from "@/components/comments/CommentSection";
 
 interface PostPageProps {
@@ -78,6 +79,13 @@ export default async function PostPage({ params }: PostPageProps) {
   const visibleRelatedSites = RELATED_SITES.filter((site) => site.url);
   const session = await auth();
 
+  let loginUrl: string | null = null;
+  try {
+    loginUrl = getAxAuthLoginUrl();
+  } catch {
+    loginUrl = null;
+  }
+
   return (
     <main className="page">
       <script
@@ -129,7 +137,11 @@ export default async function PostPage({ params }: PostPageProps) {
         </section>
       )}
 
-      <CommentSection pageId={post.pageId} isLoggedIn={Boolean(session?.user)} />
+      <CommentSection
+        pageId={post.pageId}
+        isLoggedIn={Boolean(session?.user)}
+        loginUrl={loginUrl}
+      />
     </main>
   );
 }

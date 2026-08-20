@@ -5,7 +5,8 @@ import { verifyLoginToken } from "@/lib/ax-auth/client";
 export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: {
     // 로그인 실패(CredentialsSignin 등) 시 이 경로로 `?error=...`와 함께 리다이렉트된다.
-    signIn: "/login",
+    // Viewer에는 별도 로그인 화면이 없으므로(댓글 작성 시에만 인라인 트리거), 실패 시 홈으로 보낸다.
+    signIn: "/",
   },
   providers: [
     Credentials({

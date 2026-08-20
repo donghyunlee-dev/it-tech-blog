@@ -39,10 +39,9 @@
 
 - GitHub 원격 저장소 생성 및 push(Editor), 이 저장소의 배포 설정을 공개 도메인 전용으로 정리(Viewer) — 사용자가 직접 진행하기로 함.
 - AX Auth에 Editor용/Viewer용 clientId를 각각 별도로 등록 요청 — 현재는 기존 하나의 clientId를 두 저장소의 `.env`에 그대로 복사해 둔 상태(둘 다 같은 clientId를 임시로 공유 중). Editor는 배포 후 콜백 URL이 확정되면(Phase E1 계획대로) 새 clientId를 등록받아야 하고, Viewer도 댓글 로그인용으로 별도 clientId가 필요하다.
-- "MS 계정으로 댓글 작성" 인라인 로그인 트리거 버튼 자체가 아직 구현되어 있지 않음(기존에 열려 있던 별도 과제, 이번 분리 작업 범위 아님) — 현재 댓글 작성은 기존 세션 유무만으로 `isLoggedIn`을 판단하며, 로그인을 시작하는 진입점이 Viewer 화면 어디에도 없다.
+- ~~"MS 계정으로 댓글 작성" 인라인 로그인 트리거 버튼 자체가 아직 구현되어 있지 않음~~ — 후속 작업으로 구현 완료([phase-v3-comment-login-trigger/result.md](../phase-v3-comment-login-trigger/result.md) 참고).
 - 기존에 열려 있던 과제(api-spec.md 분리, 댓글 알림 메일 신선한 login_token UX)는 그대로 유지된다.
 
 ## Next Steps
 
 - Editor 저장소를 GitHub에 올릴지, 로컬에서 더 작업할지 확인.
-- Viewer의 "MS 계정으로 댓글 작성" 인라인 트리거 UX를 설계·구현할지 확인(Comment 기능의 실질적 완성에 필요).

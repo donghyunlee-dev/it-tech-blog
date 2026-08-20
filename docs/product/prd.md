@@ -255,6 +255,7 @@ Editor와 Viewer는 별도 서비스이므로 개발 계획도 서비스별 트�
 **Phase V3 — Comment 기능**
 - 목표: 댓글 작성 시에만 AX 로그인을 사용해, MS 로그인 사용자와 외부 사용자 모두 댓글을 작성하고 계층 구조로 열람할 수 있게 한다.
 - 포함 기능: MS 로그인 사용자 댓글 작성, 외부 사용자 댓글 작성, 대댓글 및 댓글 계층 조회(성능 최적화 포함), 댓글 알림 메일 발송
+- 진행 상태: "MS 계정으로 댓글 작성" 인라인 로그인 트리거 버튼을 구현했다 — 버튼 클릭 시 현재 게시글 경로를 쿠키(`ax_return_to`)에 저장한 뒤 AX Auth 로그인으로 이동하고, 콜백(`/api/auth/ax-callback`)이 그 쿠키를 읽어 원래 보던 게시글로 되돌아온다(기존에는 콜백이 삭제된 `/editor`로 하드코딩되어 있어 저장소 분리 이후 깨져 있던 경로였음 — 함께 수정). 실 AX Auth clientId로 `login.microsoftonline.com`까지 정상 도달하는 것을 확인했다(`docs/tasks/phase-v3-comment-login-trigger/` 참고). 댓글 알림 메일의 신선한 `login_token` 확보 UX는 별도 과제로 남아 있다.
 
 **Phase V4 — 운영 자동화**
 - 목표: 운영 이상 감지 체계를 갖추고, 리다이렉트·악용 방지를 마무리하고, Viewer를 통합 검증하여 안정적으로 배포한다.
@@ -296,7 +297,7 @@ Editor와 Viewer는 별도 서비스이므로 개발 계획도 서비스별 트�
 - [x] Tech Blog 홈/문서 상세에 있던 "Editor로 이동" 관련 내비게이션 — 원래 없었으므로 해당 없음
 - [ ] AX Auth에 Editor용 `clientId`와 Viewer(댓글용)용 `clientId`를 각각 별도로 등록 요청(현재는 기존 하나의 clientId를 두 저장소의 `.env`에 임시로 그대로 복사해 둔 상태 — 서비스별로 나눠야 함)
 - [x] `docs/tasks/`의 기존 phase-1~4 작업 문서는 통합 저장소 기준으로 작성된 것이므로 참고 자료로만 남겨둠(phase-e1-e2, phase-e3, phase-migration 문서가 실제 서비스 분리 기준 최신 기록)
-- [ ] Viewer의 "MS 계정으로 댓글 작성" 인라인 로그인 트리거 UX 구현(현재 미구현 — Comment 기능의 실질적 완성에 필요, 기존에 열려 있던 별도 과제)
+- [x] Viewer의 "MS 계정으로 댓글 작성" 인라인 로그인 트리거 UX 구현 완료([phase-v3-comment-login-trigger/result.md](../tasks/phase-v3-comment-login-trigger/result.md) 참고)
 
 ## 🗄️ 데이터 저장 여부
 있음 — 두 서비스 모두 자체 DB는 두지 않으며 Confluence를 저장소로 사용한다. Editor가 쓰고, Viewer는 읽기 전용(댓글만 예외적으로 쓰기)이다. 상세 데이터 구조는 [data-spec.md](data-spec.md) 참고.

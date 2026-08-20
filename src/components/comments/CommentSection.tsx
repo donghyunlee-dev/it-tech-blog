@@ -13,20 +13,31 @@ interface CommentNode {
 interface CommentSectionProps {
   pageId: string;
   isLoggedIn: boolean;
+  loginUrl: string | null;
 }
 
 interface CommentFormProps {
   pageId: string;
   parentCommentId?: string;
   isLoggedIn: boolean;
+  loginUrl: string | null;
   onPosted: () => void;
   onCancel?: () => void;
+}
+
+const RETURN_TO_COOKIE = "ax_return_to";
+
+function startAxAuthLogin(loginUrl: string) {
+  const returnTo = `${window.location.pathname}${window.location.search}`;
+  document.cookie = `${RETURN_TO_COOKIE}=${encodeURIComponent(returnTo)}; path=/; max-age=300; SameSite=Lax`;
+  window.location.href = loginUrl;
 }
 
 function CommentForm({
   pageId,
   parentCommentId,
   isLoggedIn,
+  loginUrl,
   onPosted,
   onCancel,
 }: CommentFormProps) {
@@ -70,6 +81,21 @@ function CommentForm({
 
   return (
     <form className="stack" onSubmit={handleSubmit}>
+      {!isLoggedIn && loginUrl && (
+        <div className="stack" style={{ gap: 8 }}>
+          <button
+            type="button"
+            className="button button-secondary"
+            onClick={() => startAxAuthLogin(loginUrl)}
+          >
+            MS 계정으로 댓글 작성
+          </button>
+          <p className="page-subtitle" style={{ margin: 0 }}>
+            또는 아래에 이름·이메일을 입력해 댓글을 남길 수 있습니다.
+          </p>
+        </div>
+      )}
+
       {!isLoggedIn && (
         <div className="stack" style={{ flexDirection: "row", gap: 8 }}>
           <div className="field" style={{ flex: 1 }}>
@@ -129,11 +155,13 @@ function CommentItem({
   comment,
   pageId,
   isLoggedIn,
+  loginUrl,
   onPosted,
 }: {
   comment: CommentNode;
   pageId: string;
   isLoggedIn: boolean;
+  loginUrl: string | null;
   onPosted: () => void;
 }) {
   const [showReplyForm, setShowReplyForm] = useState(false);
@@ -161,6 +189,7 @@ function CommentItem({
               pageId={pageId}
               parentCommentId={comment.commentId}
               isLoggedIn={isLoggedIn}
+              loginUrl={loginUrl}
               onPosted={() => {
                 setShowReplyForm(false);
                 onPosted();
@@ -178,6 +207,7 @@ function CommentItem({
                 comment={reply}
                 pageId={pageId}
                 isLoggedIn={isLoggedIn}
+                loginUrl={loginUrl}
                 onPosted={onPosted}
               />
             ))}
@@ -188,7 +218,7 @@ function CommentItem({
   );
 }
 
-export function CommentSection({ pageId, isLoggedIn }: CommentSectionProps) {
+export function CommentSection({ pageId, isLoggedIn, loginUrl }: CommentSectionProps) {
   const [comments, setComments] = useState<CommentNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -238,6 +268,7 @@ export function CommentSection({ pageId, isLoggedIn }: CommentSectionProps) {
               comment={comment}
               pageId={pageId}
               isLoggedIn={isLoggedIn}
+              loginUrl={loginUrl}
               onPosted={loadComments}
             />
           ))}
@@ -245,7 +276,12 @@ export function CommentSection({ pageId, isLoggedIn }: CommentSectionProps) {
       )}
 
       <div style={{ marginTop: 16 }}>
-        <CommentForm pageId={pageId} isLoggedIn={isLoggedIn} onPosted={loadComments} />
+        <CommentForm
+          pageId={pageId}
+          isLoggedIn={isLoggedIn}
+          loginUrl={loginUrl}
+          onPosted={loadComments}
+        />
       </div>
     </section>
   );
