@@ -79,7 +79,7 @@ export async function getConfiguredSpace(): Promise<ConfluenceSpace> {
   return space;
 }
 
-// ── Pages ──────────────────────────────────────────────
+// ── Pages (읽기 전용 — Viewer는 Confluence 문서를 쓰지 않는다) ──
 
 export interface ConfluencePage {
   id: string;
@@ -91,68 +91,13 @@ export interface ConfluencePage {
   body?: { storage: { value: string; representation: "storage" } };
 }
 
-export async function listChildPages(
-  parentId: string
-): Promise<ConfluencePage[]> {
-  const result = await confluenceRequest<{ results: ConfluencePage[] }>(
-    `/api/v2/pages/${parentId}/children`
-  );
-  return result.results;
-}
-
-export async function findChildPageByTitle(
-  parentId: string,
-  title: string
-): Promise<ConfluencePage | null> {
-  const children = await listChildPages(parentId);
-  return children.find((page) => page.title === title) ?? null;
-}
-
 export async function getPage(pageId: string): Promise<ConfluencePage> {
   return confluenceRequest<ConfluencePage>(
     `/api/v2/pages/${pageId}?body-format=storage`
   );
 }
 
-export async function createPage(input: {
-  spaceId: string;
-  parentId: string;
-  title: string;
-  bodyValue: string;
-}): Promise<ConfluencePage> {
-  return confluenceRequest<ConfluencePage>("/api/v2/pages", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      spaceId: input.spaceId,
-      status: "current",
-      title: input.title,
-      parentId: input.parentId,
-      body: { representation: "storage", value: input.bodyValue },
-    }),
-  });
-}
-
-export async function updatePage(input: {
-  pageId: string;
-  title: string;
-  bodyValue: string;
-  nextVersion: number;
-}): Promise<ConfluencePage> {
-  return confluenceRequest<ConfluencePage>(`/api/v2/pages/${input.pageId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      id: input.pageId,
-      status: "current",
-      title: input.title,
-      body: { representation: "storage", value: input.bodyValue },
-      version: { number: input.nextVersion },
-    }),
-  });
-}
-
-// ── Content Properties ────────────────────────────────
+// ── Content Properties (읽기 전용) ────────────────────────
 
 export interface ConfluencePageProperty<T = unknown> {
   id: string;
@@ -171,93 +116,11 @@ export async function getPageProperty<T = unknown>(
   return result.results[0] ?? null;
 }
 
-export async function upsertPageProperty<T = unknown>(
-  pageId: string,
-  key: string,
-  value: T
-): Promise<ConfluencePageProperty<T>> {
-  const existing = await getPageProperty<T>(pageId, key);
-
-  if (!existing) {
-    return confluenceRequest<ConfluencePageProperty<T>>(
-      `/api/v2/pages/${pageId}/properties`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key, value }),
-      }
-    );
-  }
-
-  return confluenceRequest<ConfluencePageProperty<T>>(
-    `/api/v2/pages/${pageId}/properties/${existing.id}`,
-    {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        key,
-        value,
-        version: { number: existing.version.number + 1 },
-      }),
-    }
-  );
-}
-
-// ── Attachments (v1 REST API — v2에는 첨부파일 업로드 엔드포인트가 없음) ──
-
-export interface ConfluenceAttachment {
-  attachmentId: string;
-  url: string;
-}
-
-export async function uploadAttachment(
-  pageId: string,
-  file: File
-): Promise<ConfluenceAttachment> {
-  const { baseUrl, email, apiToken } = getConfluenceConfig();
-
-  const form = new FormData();
-  form.append("file", file, file.name);
-
-  const response = await fetch(
-    `${baseUrl}/rest/api/content/${pageId}/child/attachment`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: buildAuthHeader(email, apiToken),
-        Accept: "application/json",
-        "X-Atlassian-Token": "nocheck",
-      },
-      body: form,
-    }
-  );
-
-  if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    throw new ConfluenceApiError(
-      response.status,
-      `Confluence 첨부파일 업로드 실패: ${response.status} ${response.statusText}${body ? ` - ${body}` : ""}`
-    );
-  }
-
-  const result = (await response.json()) as {
-    results: Array<{ id: string; _links: { download: string } }>;
-  };
-  const attachment = result.results[0];
-
-  return {
-    attachmentId: attachment.id,
-    url: `${baseUrl}${attachment._links.download}`,
-  };
-}
-
-// ── Slug lookup (게시 문서 목록을 순회하며 슬러그 중복 확인) ──
-
-export async function findPublishedPageBySlug(
-  spaceId: string,
-  slug: string,
-  propertyKey: string
-): Promise<ConfluencePage | null> {
+/** Space에 속한 모든 페이지를 페이지네이션을 따라가며 조회한다(Viewer의 게시 문서 스캔에 사용). */
+export async function listAllSpacePages(
+  spaceId: string
+): Promise<ConfluencePage[]> {
+  const pages: ConfluencePage[] = [];
   let cursor: string | null = null;
 
   do {
@@ -269,18 +132,57 @@ export async function findPublishedPageBySlug(
       _links: { next?: string };
     }>(query);
 
-    for (const candidate of page.results) {
-      const property = await getPageProperty<{ slug?: string }>(
-        candidate.id,
-        propertyKey
-      );
-      if (property?.value?.slug === slug) {
-        return candidate;
-      }
-    }
-
+    pages.push(...page.results);
     cursor = page._links.next ?? null;
   } while (cursor);
 
-  return null;
+  return pages;
+}
+
+// ── Footer Comments (댓글 — Viewer가 쓰기를 수행하는 유일한 대상) ──
+
+export interface ConfluenceFooterComment {
+  id: string;
+  parentCommentId: string | null;
+  createdAt: string;
+  body?: { storage: { value: string; representation: "storage" } };
+}
+
+export async function createFooterComment(input: {
+  pageId: string;
+  parentCommentId?: string;
+  bodyValue: string;
+}): Promise<ConfluenceFooterComment> {
+  return confluenceRequest<ConfluenceFooterComment>("/api/v2/footer-comments", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      pageId: input.pageId,
+      parentCommentId: input.parentCommentId,
+      body: { representation: "storage", value: input.bodyValue },
+    }),
+  });
+}
+
+/** 문서에 달린 모든 댓글을 페이지네이션을 따라가며 한 번에 조회한다(계층은 호출부에서 메모리로 구성). */
+export async function listFooterComments(
+  pageId: string
+): Promise<ConfluenceFooterComment[]> {
+  const comments: ConfluenceFooterComment[] = [];
+  let cursor: string | null = null;
+
+  do {
+    const query: string = cursor
+      ? cursor
+      : `/api/v2/pages/${pageId}/footer-comments?body-format=storage&limit=100`;
+    const page = await confluenceRequest<{
+      results: ConfluenceFooterComment[];
+      _links: { next?: string };
+    }>(query);
+
+    comments.push(...page.results);
+    cursor = page._links.next ?? null;
+  } while (cursor);
+
+  return comments;
 }

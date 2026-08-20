@@ -45,3 +45,44 @@ export async function verifyLoginToken(
     return { valid: false, reason: "AX_AUTH_REQUEST_FAILED" };
   }
 }
+
+export interface SendMailInput {
+  loginToken: string;
+  recipients: string[];
+  subject: string;
+  body: string;
+}
+
+interface AxAuthMailResult {
+  success: boolean;
+  reason?: string;
+}
+
+/**
+ * mail-integration-guide.md의 `POST /mail/send`. 발신자는 항상 loginToken의 로그인 계정이다.
+ * 서버 간 호출 전용이며, clientSecret이 필요하다. 실패해도 예외를 던지지 않고
+ * { success: false, reason }으로 흡수한다 — 호출부(댓글 알림)가 실패를 조용히 처리할 수 있도록.
+ */
+export async function sendMail(input: SendMailInput): Promise<AxAuthMailResult> {
+  const clientId = requireEnv("AX_AUTH_CLIENT_ID");
+  const clientSecret = requireEnv("AX_AUTH_CLIENT_SECRET");
+
+  try {
+    const response = await fetch(new URL("/mail/send", getBaseUrl()), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        clientId,
+        clientSecret,
+        loginToken: input.loginToken,
+        recipients: input.recipients,
+        subject: input.subject,
+        body: input.body,
+      }),
+    });
+
+    return (await response.json()) as AxAuthMailResult;
+  } catch {
+    return { success: false, reason: "AX_AUTH_MAIL_REQUEST_FAILED" };
+  }
+}

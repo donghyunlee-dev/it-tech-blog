@@ -2,12 +2,12 @@
 
 사내 직원 전체가 MS 계정으로 로그인하여 문서를 작성하고, 게시된 문서를 Tech Blog에서 열람할 수 있는 서비스를 구축한다.
 
-서비스는 문서를 작성하고 게시하는 **Editor**, 게시된 문서를 보여주는 **Viewer**, Viewer에 연결하여 사용하는 **Comment**로 구성한다. Editor와 Comment에서 생성한 데이터는 Confluence API를 통해 저장하고 조회한다.
+서비스는 문서를 작성하고 게시하는 **Editor**와, 게시된 문서를 보여주는 **Viewer(Tech Blog)**로 구성하며, 이 둘은 **별도로 개발·배포되는 두 개의 서비스**다. Comment는 Viewer(Tech Blog) 안에 포함되는 기능이며 별도로 배포되는 서비스가 아니다. Editor와 Comment에서 생성한 데이터는 Confluence API를 통해 저장하고 조회한다.
 # 서비스 구성
 
-- **Editor**: 문서 작성, 수정, 관리, 게시를 담당한다.
-- **Viewer**: Editor에서 게시된 문서를 조회하여 서비스 목적에 맞게 보여준다.
-- **Comment**: Viewer에 연결하여 사용하는 별도 댓글 서비스이다.
+- **Editor**: 사내 IT 담당자·AX팀 전용 문서 작성 도구. 자체 로그인 화면을 진입점으로 하는 별도 애플리케이션이며, Confluence를 직접 컨트롤(문서 생성·수정·게시 상태 설정)한다.
+- **Viewer(Tech Blog)**: Editor에서 게시된 문서를 조회하여 보여주는 공개 서비스. 디자인과 문서 표현(가독성, SEO, 렌더링 품질)이 핵심이며, 문서 작성 기능은 없다. Comment 기능을 포함하며, 댓글을 작성할 때만 일시적으로 MS Login(AX Auth)을 사용한다.
+- **Comment**: Viewer(Tech Blog)에 포함된 댓글 기능. 별도 서비스가 아니라 Viewer 안에서 동작하며, 댓글 저장은 Confluence API를 사용한다.
 - **Confluence**: Editor와 Comment에서 생성한 데이터를 보관하고 API로 제공한다.
 
 # 공통 원칙
@@ -22,7 +22,7 @@
 
 # Editor
 
-Confluence 계정이 없는 사내 직원도 문서를 작성하고 관리할 수 있도록 MS 계정 기반의 문서 작성 도구를 제공한다.
+Confluence 계정이 없는 사내 직원도 문서를 작성하고 관리할 수 있도록 MS 계정 기반의 문서 작성 도구를 제공한다. Editor는 Viewer(Tech Blog)와 별도로 개발·배포되는 독립된 애플리케이션이며, 로그인 화면을 메인 진입점으로 하여 로그인하지 않으면 어떤 화면도 사용할 수 없다. Editor는 Confluence를 직접 컨트롤하는 서비스로, 문서 생성·수정·게시 상태 설정이 모두 Editor를 통해 Confluence에 반영된다.
 
 사용자가 로그인하면 메일 계정을 기준으로 Confluence Space 안의 개인 폴더를 확인한다. 개인 폴더가 있으면 기존 문서와 연결하고, 없으면 폴더를 생성한 뒤 Editor에 접속한다.
 
@@ -34,7 +34,7 @@ Editor는 게시할 때 공개 주소에 사용할 경로와 검색·공유에 �
 
 # Viewer
 
-Viewer는 Editor에서 게시된 문서만 조회하여 보여주는 공개 서비스이다. Tech Blog는 첫 번째 Viewer이며, Editor에서 지정한 게시 위치에 따라 문서를 구성한다.
+Viewer는 Editor에서 게시된 문서만 조회하여 보여주는 공개 서비스이다. Tech Blog는 첫 번째 Viewer이며, Editor에서 지정한 게시 위치에 따라 문서를 구성한다. Viewer는 디자인과 문서 표현이 핵심인 서비스로, 문서를 작성하는 기능은 갖지 않으며 Confluence는 읽기 전용으로만 사용한다(댓글 저장은 예외 — 아래 Comment 참고).
 
 Editor와 Viewer를 분리하여 동일한 Confluence 문서를 다른 형태의 Viewer에서도 활용할 수 있도록 한다. 문서는 Editor에서 작성하고 게시 위치를 설정하며, 각 Viewer는 자신에게 게시된 문서만 조회한다.
 
@@ -54,7 +54,7 @@ Confluence의 문서와 content properties를 바탕으로 검색 결과와 외�
 
 # Comment
 
-Comment는 Viewer에 연결하여 사용할 수 있는 별도 서비스로 구성한다. 사내 직원은 MS Login을 통해 댓글을 작성하며, 댓글은 Confluence API를 통해 저장하고 조회한다.
+Comment는 별도로 배포되는 서비스가 아니라 Viewer(Tech Blog) 안에 포함된 기능이다. Viewer 자체는 비로그인으로 이용하되, 댓글을 작성하려는 시점에만 MS Login(AX Auth)을 거쳐 그 결과로 Confluence에 댓글을 저장한다. 로그인은 별도 화면이 아니라 댓글 작성 흐름 안에서 트리거된다.
 
 Confluence에는 단일 계정으로 댓글이 기록되므로, 서비스에서는 MS Login 사용자를 실제 댓글 작성자로 구분하여 표시한다. 
 
