@@ -60,16 +60,9 @@
 
 ## 서비스별 기술 스택
 
-### Editor 서비스
+### Editor 서비스 (참고 — 별도 저장소 `sfood-it-editor`에서 관리)
 
-| 영역 | 제안 | 선정 이유 |
-|---|---|---|
-| 프론트엔드/백엔드 | Next.js(React, TypeScript), Route Handlers | 로그인 후 사용하는 SPA形 편집 UI와 API를 한 프레임워크로 처리 |
-| 데이터 저장 | 없음(Confluence API가 저장소 역할) | 문서·게시 메타데이터를 Confluence에 직접 씀(직접 컨트롤) |
-| 인증 | AX Auth(사내 공통 인증 서비스) 경유 + Auth.js(NextAuth) | 앱 전체가 로그인 필수. Azure AD와 직접 OIDC 연동이 불가능해 AX Auth가 대행. 리다이렉트 방식(서버가 `clientSecret`과 함께 `login_token` 검증)으로 연동. 상세: [login-integration-guide.md](login-integration-guide.md) |
-| Confluence 연동 | Confluence Cloud REST API v2(+ 첨부파일은 v1), 서비스 계정 API 토큰 | 문서 생성·수정·게시 설정·이미지 첨부 등 쓰기 작업 전담 |
-| 배포 환경 | Vercel(또는 사내 정책에 맞는 별도 프로젝트) | Editor 전용 도메인/프로젝트로 독립 배포 |
-| 운영 알림 | Slack Incoming Webhook | Editor 자신의 Confluence 호출 실패를 감지해 운영팀에 알림 |
+Next.js(React, TypeScript) 기반 독립 애플리케이션으로, 자체 DB 없이 Confluence Cloud REST API v2(+첨부파일 v1)에 문서·게시 메타데이터를 직접 쓴다. 앱 전체가 AX Auth 경유 로그인 필수이며, Editor 전용 도메인/프로젝트로 독립 배포된다. 이 표에 있던 기술 스택 세부 사항(선정 이유 포함)은 Editor 저장소 자체 문서로 이관되었으며, Viewer가 의존하는 접점은 Confluence 데이터 구조([data-spec.md](data-spec.md))와 AX Auth 로그인 방식([login-integration-guide.md](login-integration-guide.md))뿐이다.
 
 ### Viewer(Tech Blog) 서비스
 
@@ -85,7 +78,7 @@
 ### 두 서비스 간 공유 요소
 
 - **Confluence 데이터**: 유일한 공유 지점. Editor가 쓰고 Viewer가 읽는다(댓글은 Viewer가 쓴다).
-- **AX Auth**: 두 서비스가 각자 독립적으로 AX Auth와 연동한다(각자 별도의 `clientId`로 AX팀에 등록). Editor는 상시 로그인 세션 용도로, Viewer는 댓글 작성 시 일시적 로그인 용도로 사용 방식이 다르다.
+- **AX Auth**: 두 서비스가 각자 독립적으로 AX Auth와 연동한다(각자 별도의 `clientId`로 AX팀에 등록). Editor는 상시 로그인 세션 용도로, Viewer는 댓글 작성 시 일시적 로그인 용도로 사용 방식이 다르다. 기존에 두 저장소가 임시로 공유하던 clientId는 원래 이 저장소(Viewer, "blog")로 등록된 것이 맞음을 확인했으며(2026-09-11), 이 저장소는 현재 clientId를 그대로 유지한다. Editor는 자신의 clientId를 별도로 재등록하도록 Editor 저장소 쪽에서 변경할 예정이다.
 - **코드**: 두 서비스는 별도 저장소/애플리케이션이므로 코드를 공유하지 않는 것을 기본으로 한다. Confluence 클라이언트, AX Auth 클라이언트처럼 로직이 유사한 부분이 있더라도, 소규모 팀·단순한 구조 우선 원칙에 따라 각 서비스가 자신에게 필요한 부분만 독립적으로 구현한다(모노레포·공용 패키지 도입은 하지 않음 — 트레이드오프 참고).
 
 ## 데이터 및 인증

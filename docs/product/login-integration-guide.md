@@ -93,3 +93,5 @@ Content-Type: application/json
 Next.js Route Handlers 기반 백엔드가 있으므로 **방식 2 — 리다이렉트 방식**을 사용한다. 콜백으로 전달받은 `login_token`을 서버에서 `clientSecret`과 함께 `/auth/token/verify`로 검증한 뒤, 그 결과로 Auth.js(NextAuth) 세션을 생성한다.
 
 이 결정에 따라 기존에 Azure AD 직접 OIDC 연동으로 구현되어 있던 로그인 코드(`src/lib/auth.ts`, `src/app/api/auth/[...nextauth]/route.ts`)는 AX Auth 리다이렉트 방식에 맞춰 재구현이 필요하다. 관련 내용은 [prd.md](prd.md)의 Phase 1 체크리스트와 [architecture.md](architecture.md)의 인증 방식 항목에 반영되어 있다.
+
+**clientId 등록 확정(2026-09-11)**: Editor 저장소 분리 이후 두 저장소가 임시로 같은 `clientId`를 `.env`에 복사해 공유하던 상태였는데, 그 `clientId`는 원래 이 저장소(Viewer/Tech Blog, "blog")로 등록된 것이 맞음을 확인했다. 따라서 이 저장소는 현재 `clientId`/`redirect_uri`를 변경 없이 그대로 사용한다. Editor는 자신의 `clientId`를 AX팀에 별도로 재등록하도록 Editor 저장소 쪽에서 변경할 예정이며, 그 작업은 이 저장소의 범위가 아니다.
