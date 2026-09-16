@@ -139,6 +139,37 @@ export async function listAllSpacePages(
   return pages;
 }
 
+// ── Labels (카테고리/태그 — Confluence 네이티브 페이지 레이블) ──
+
+export interface ConfluencePageLabel {
+  id: string;
+  name: string;
+  prefix: string;
+}
+
+/** 문서에 붙은 레이블(태그)을 페이지네이션을 따라가며 전부 조회한다. */
+export async function listPageLabels(
+  pageId: string
+): Promise<ConfluencePageLabel[]> {
+  const labels: ConfluencePageLabel[] = [];
+  let cursor: string | null = null;
+
+  do {
+    const query: string = cursor
+      ? cursor
+      : `/api/v2/pages/${pageId}/labels?limit=100`;
+    const page = await confluenceRequest<{
+      results: ConfluencePageLabel[];
+      _links: { next?: string };
+    }>(query);
+
+    labels.push(...page.results);
+    cursor = page._links.next ?? null;
+  } while (cursor);
+
+  return labels;
+}
+
 // ── Footer Comments (댓글 — Viewer가 쓰기를 수행하는 유일한 대상) ──
 
 export interface ConfluenceFooterComment {

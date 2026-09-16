@@ -5,6 +5,7 @@ import type { PostCardData } from "./PostCard";
 export function Hero({ post }: { post: PostCardData }) {
   return (
     <Link href={`/posts/${post.slug}`} className="hero">
+      {post.tags.length > 0 && <span className="kicker">{post.tags.join(" · ")}</span>}
       <h1 className="hero-title">{post.title}</h1>
       {post.metaDescription && <p className="hero-excerpt">{post.metaDescription}</p>}
       {post.publishedAt && (

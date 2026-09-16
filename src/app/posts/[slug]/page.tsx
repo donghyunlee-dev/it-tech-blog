@@ -101,6 +101,7 @@ export default async function PostPage({ params }: PostPageProps) {
 
         <article>
           <header className="article-header">
+            {post.tags.length > 0 && <span className="kicker">{post.tags.join(" · ")}</span>}
             <h1 className="article-title">{post.title}</h1>
             <div className="byline">
               <div className="byline-sub">
