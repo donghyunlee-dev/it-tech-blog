@@ -124,7 +124,16 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
 
         <article>
           <header className="article-header">
-            {post.tags.length > 0 && <span className="kicker">{post.tags.join(" · ")}</span>}
+            {post.tags.length > 0 && (
+              <span className="kicker">
+                {post.tags.map((tag, index) => (
+                  <span key={tag}>
+                    {index > 0 && " · "}
+                    <Link href={`/tags/${encodeURIComponent(tag)}`}>{tag}</Link>
+                  </span>
+                ))}
+              </span>
+            )}
             <h1 className="article-title">{post.title}</h1>
             <div className="byline">
               <div className="byline-sub">

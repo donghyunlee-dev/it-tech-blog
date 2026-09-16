@@ -11,6 +11,7 @@ export async function GET() {
         title: post.title,
         publishedAt: post.publishedAt,
         metaDescription: post.metaDescription,
+        tags: post.tags,
       })),
     });
   } catch (error) {
