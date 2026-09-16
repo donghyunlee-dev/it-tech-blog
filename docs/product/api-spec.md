@@ -76,7 +76,13 @@ Content-Type: application/json
 ```json
 {
   "posts": [
-    { "slug": "공개 경로", "title": "문서 제목", "publishedAt": "게시 일시", "metaDescription": "검색·공유용 설명(검색 오버레이 카드 요약에도 사용)" }
+    {
+      "slug": "공개 경로",
+      "title": "문서 제목",
+      "publishedAt": "게시 일시",
+      "metaDescription": "검색·공유용 설명(검색 오버레이 카드 요약에도 사용)",
+      "tags": ["Confluence 페이지 레이블(태그), 검색 오버레이의 태그 그룹·아카이브 페이지(/tags/{tag})에 사용"]
+    }
   ]
 }
 ```
