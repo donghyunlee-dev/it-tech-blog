@@ -63,7 +63,7 @@ Editor 내부 편집기(Tiptap/ProseMirror)의 원본과 **문서의 실제 표�
 
 > `canonicalUrl`/`structuredDataType`/`redirectFrom`은 Editor 어디에도 실제로 쓰는 코드가 없어 목록에서 제거했다(과거 설계 문서에만 존재했음). 필요해지면 그때 다시 설계·추가한다.
 >
-> **태그/카테고리**는 이 content property가 아니라 **Confluence 네이티브 페이지 레이블**로 구현되어 있다(`label(태그): string[]`, Editor 쪽 확인됨). Viewer가 카테고리·키커 라벨을 노출하려면 content property 조회가 아니라 별도의 레이블 조회 API(`GET /pages/{id}/labels`)를 호출해야 한다 — 현재 Viewer는 이 조회를 구현하지 않았다.
+> **태그/카테고리**는 이 content property가 아니라 **Confluence 네이티브 페이지 레이블**로 구현되어 있다(`label(태그): string[]`, Editor 쪽 확인됨). Viewer는 `GET /api/v2/pages/{id}/labels`(`prefix: "global"`인 것만)로 조회해 홈/상세 화면의 태그 라인(design-direction.md 키커)에 노출한다(2026-09-16, [viewer-tag-labels](../tasks/viewer-tag-labels/) 참고) — 사전 정의된 카테고리 체계가 아니라 작성자가 자유롭게 붙인 다중 태그이므로, 화면에는 순서상 앞의 최대 3개만 `·`로 이어 보여준다.
 
 ### Comment (Confluence Comment)
 

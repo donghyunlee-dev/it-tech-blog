@@ -4,6 +4,7 @@ import {
   getPage,
   getPageProperty,
   listAllSpacePages,
+  listPageLabels,
 } from "@/lib/confluence/client";
 import type { PublishMetadata, PublishViewerMetadata } from "@/lib/viewer/publish-metadata";
 import { NotFoundError } from "@/lib/errors";
@@ -16,6 +17,9 @@ const SOURCE_DOCUMENT_PROPERTY_KEY = "sourceDocument";
 export const VIEWER_ID = "tech-blog";
 const RELATED_POSTS_LIMIT = 3;
 const READING_CHARS_PER_MINUTE = 500;
+/** 카테고리 체계가 아니라 작성자가 자유롭게 붙인 다중 태그라 순서 보장이 없다 — 키커 자리에
+ *  너무 길게 늘어지지 않도록 앞에서부터 최대 3개만 보여준다. */
+const MAX_DISPLAYED_TAGS = 3;
 
 /** Editor가 `sourceDocument` content property에 쓰는 값 중 Viewer가 필요로 하는 부분만. */
 export interface SourceDocument {
@@ -29,6 +33,8 @@ export interface PublishedPostSummary {
   title: string;
   publishedAt: string;
   metaDescription: string;
+  /** Confluence 페이지 레이블(태그). 없으면 빈 배열 — 화면에서 태그 라인 자체를 생략한다. */
+  tags: string[];
 }
 
 export interface PublishedPostDetail extends PublishedPostSummary {
@@ -57,6 +63,7 @@ interface PublishedEntry {
   viewerMeta: PublishViewerMetadata;
   publishedAt: string;
   title: string;
+  tags: string[];
 }
 
 /**
@@ -81,16 +88,20 @@ async function listPublishedEntries(): Promise<PublishedEntry[]> {
       continue;
     }
 
-    const sourceDocProperty = await getPageProperty<SourceDocument>(
-      page.id,
-      SOURCE_DOCUMENT_PROPERTY_KEY
-    );
+    const [sourceDocProperty, labels] = await Promise.all([
+      getPageProperty<SourceDocument>(page.id, SOURCE_DOCUMENT_PROPERTY_KEY),
+      listPageLabels(page.id),
+    ]);
 
     entries.push({
       page,
       viewerMeta,
       publishedAt: publishProperty.value.publishedAt ?? "",
       title: sourceDocProperty?.value?.title ?? page.title,
+      tags: labels
+        .filter((label) => label.prefix === "global")
+        .map((label) => label.name)
+        .slice(0, MAX_DISPLAYED_TAGS),
     });
   }
 
@@ -102,12 +113,13 @@ async function listPublishedEntries(): Promise<PublishedEntry[]> {
 /** 게시된 문서 목록을 조회한다(Viewer 홈, sitemap, RSS가 공용으로 사용). */
 export async function listPublishedPosts(): Promise<PublishedPostSummary[]> {
   const entries = await listPublishedEntries();
-  return entries.map(({ page, viewerMeta, publishedAt, title }) => ({
+  return entries.map(({ page, viewerMeta, publishedAt, title, tags }) => ({
     pageId: page.id,
     slug: viewerMeta.publicSlug,
     title,
     publishedAt,
     metaDescription: viewerMeta.metaDescription ?? "",
+    tags,
   }));
 }
 
@@ -122,7 +134,7 @@ export async function getPublishedPostBySlug(
     throw new NotFoundError("게시된 문서를 찾을 수 없습니다.");
   }
 
-  const { page, viewerMeta, publishedAt, title } = entries[matchIndex];
+  const { page, viewerMeta, publishedAt, title, tags } = entries[matchIndex];
   const fullPage = await getPage(page.id);
   const html = convertStorageToHtml(fullPage.body?.storage.value ?? "");
 
@@ -137,6 +149,7 @@ export async function getPublishedPostBySlug(
     title,
     publishedAt,
     metaDescription: viewerMeta.metaDescription ?? "",
+    tags,
     canonicalUrl: `${getSiteBaseUrl()}/posts/${slug}`,
     html,
     readingMinutes: estimateReadingMinutes(html),
