@@ -8,6 +8,17 @@ import {
   listComments,
 } from "@/lib/comments/comments";
 import { notifyCommentAdded } from "@/lib/comments/notify";
+import { assertWithinRateLimit } from "@/lib/rate-limit";
+
+// 외부 사용자(비로그인) 댓글 작성만 제한한다 — api-spec.md의 POST /api/comments 429 계약과
+// 동일한 범위. MS 로그인 사용자는 세션으로 이미 신원이 식별되어 스팸 위험이 낮다.
+const EXTERNAL_COMMENT_RATE_LIMIT = { limit: 5, windowMs: 60_000 };
+
+function getClientIp(request: Request): string {
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  if (forwardedFor) return forwardedFor.split(",")[0].trim();
+  return request.headers.get("x-real-ip") ?? "unknown";
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,6 +38,13 @@ export async function POST(request: Request) {
   try {
     const session = await auth();
     const sessionEmail = session?.user?.email;
+
+    if (!sessionEmail) {
+      assertWithinRateLimit(
+        `comment:${getClientIp(request)}`,
+        EXTERNAL_COMMENT_RATE_LIMIT
+      );
+    }
 
     const payload = (await request.json()) as {
       pageId?: string;

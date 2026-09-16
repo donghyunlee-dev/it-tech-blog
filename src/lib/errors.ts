@@ -25,3 +25,16 @@ export class ConflictError extends Error {
     this.name = "ConflictError";
   }
 }
+
+export class RateLimitError extends Error {
+  retryAfterSeconds: number;
+
+  constructor(
+    retryAfterSeconds: number,
+    message = "요청이 너무 많습니다. 잠시 후 다시 시도해주세요."
+  ) {
+    super(message);
+    this.name = "RateLimitError";
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
