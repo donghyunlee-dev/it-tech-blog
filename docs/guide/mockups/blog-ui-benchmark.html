@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tech Blog UI 벤치마킹 목업</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<style>
+  :root {
+    --brand-red: #e4002B;
+    --brand-red-deep: #e00b41;
+    --text-primary: #000000;
+    --text-secondary: #54585A;
+    --text-tertiary: #6a6a6a;
+    --text-disabled: rgba(0, 0, 0, 0.24);
+    --surface: #ffffff;
+    --surface-muted: #f2f2f2;
+    --border-hairline: rgba(0, 0, 0, 0.08);
+    --shadow-card: rgba(0, 0, 0, 0.02) 0px 0px 0px 1px, rgba(0, 0, 0, 0.04) 0px 2px 6px, rgba(0, 0, 0, 0.1) 0px 4px 8px;
+    --radius-button: 8px;
+    --radius-badge: 14px;
+    --radius-card: 20px;
+    --radius-large: 32px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--surface);
+    color: var(--text-primary);
+    font-family: "Pretendard", "맑은고딕", -apple-system, system-ui, Roboto, "Helvetica Neue", sans-serif;
+    font-weight: 500;
+  }
+
+  .page {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 0 var(--space-5) 96px;
+  }
+
+  /* ---------- Header ---------- */
+  header.site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px var(--space-5);
+    max-width: 1040px;
+    margin: 0 auto;
+  }
+
+  .logo {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .logo .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--brand-red); display: inline-block; }
+
+  .nav-actions { display: flex; align-items: center; gap: 12px; }
+
+  .icon-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: var(--surface-muted);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+  .icon-btn:hover { background: #ececec; }
+  .icon-btn:active { transform: scale(0.92); }
+
+  /* ---------- Section heading ---------- */
+  .section-heading {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    line-height: 1.3;
+    margin: var(--space-6) 0 4px;
+  }
+  .section-sub { color: var(--text-secondary); font-size: 14px; font-weight: 400; margin: 0 0 var(--space-5); }
+
+  /* ---------- Category pills ---------- */
+  .pill-row {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    margin-bottom: var(--space-6);
+  }
+  .pill {
+    flex: none;
+    padding: 8px 18px;
+    border-radius: var(--radius-badge);
+    background: var(--surface-muted);
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .pill.active { background: var(--brand-red); color: #ffffff; }
+  .pill:not(.active):hover { background: #e9e9e9; }
+
+  /* ---------- Card grid (콘텐츠 목록) ---------- */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-5);
+  }
+
+  .post-card {
+    background: var(--surface);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  }
+  .post-card:hover { transform: translateY(-3px); box-shadow: rgba(0,0,0,0.03) 0px 0px 0px 1px, rgba(0,0,0,0.06) 0px 6px 14px, rgba(0,0,0,0.12) 0px 10px 20px; }
+
+  .post-thumb {
+    height: 140px;
+    background: linear-gradient(135deg, #ffe4e9 0%, #ffd0d8 45%, #e4002B 100%);
+    position: relative;
+  }
+  .post-thumb.alt2 { background: linear-gradient(135deg, #fff3d6 0%, #ffe3b0 45%, #f2a33a 100%); }
+  .post-thumb.alt3 { background: linear-gradient(135deg, #e8f0ff 0%, #cfe0ff 45%, #4d7fe0 100%); }
+
+  .post-tag {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--text-primary);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: var(--radius-badge);
+  }
+
+  .post-body { padding: 18px 18px 20px; }
+  .post-title {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.18px;
+    line-height: 1.35;
+    margin: 0 0 8px;
+  }
+  .post-excerpt {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0 0 14px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .post-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-tertiary);
+  }
+  .avatar-dot {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #d9d9d9;
+    flex: none;
+  }
+
+  /* ---------- Search overlay (검색 영역) ---------- */
+  .search-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(6px);
+    z-index: 50;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 10vh;
+  }
+  .search-overlay.open { display: flex; }
+
+  .search-overlay .logo { margin-bottom: 28px; }
+
+  .search-box {
+    width: min(560px, 88vw);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1.5px solid var(--brand-red);
+    border-radius: var(--radius-button);
+    padding: 14px 18px;
+    background: var(--surface);
+  }
+  .search-box input {
+    border: none;
+    outline: none;
+    flex: 1;
+    font-size: 16px;
+    font-family: inherit;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+  .search-box input::placeholder { color: var(--text-disabled); }
+
+  .search-close {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+  }
+
+  .search-results {
+    width: min(560px, 88vw);
+    margin-top: var(--space-5);
+    display: flex;
+    flex-direction: column;
+  }
+  .search-result-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 4px;
+    border-bottom: 1px solid var(--border-hairline);
+    cursor: pointer;
+  }
+  .search-result-row:hover .post-title { color: var(--brand-red); }
+  .search-result-row .post-title { margin: 0 0 6px; font-size: 15px; }
+  .search-result-row .post-excerpt { margin: 0; -webkit-line-clamp: 2; }
+  .search-result-thumb {
+    width: 64px; height: 64px; border-radius: 12px; flex: none;
+    background: linear-gradient(135deg, #ffe4e9, #e4002B);
+  }
+
+  /* ---------- Comment section (댓글 구성) ---------- */
+  .comment-section { margin-top: var(--space-6); }
+
+  .comment-composer {
+    background: var(--surface);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    padding: var(--space-5);
+    display: flex;
+    gap: 14px;
+    margin-bottom: var(--space-5);
+  }
+  .comment-composer .avatar-dot { width: 36px; height: 36px; }
+  .composer-body { flex: 1; }
+  .composer-body textarea {
+    width: 100%;
+    border: none;
+    resize: none;
+    outline: none;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    min-height: 44px;
+  }
+  .composer-body textarea::placeholder { color: var(--text-disabled); }
+  .composer-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+    border-top: 1px solid var(--border-hairline);
+    padding-top: 12px;
+  }
+  .login-hint { font-size: 12px; color: var(--text-tertiary); }
+  .btn-primary {
+    background: var(--brand-red);
+    color: #ffffff;
+    border: none;
+    border-radius: var(--radius-button);
+    padding: 9px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+  .btn-primary:hover { background: var(--brand-red-deep); }
+  .btn-primary:active { transform: scale(0.96); }
+
+  .comment-list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-4);
+  }
+  .comment-count { font-size: 16px; font-weight: 700; letter-spacing: -0.18px; }
+  .sort-select {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .comment-item { display: flex; gap: 12px; padding: 16px 0; border-top: 1px solid var(--border-hairline); }
+  .comment-item:first-child { border-top: none; }
+  .comment-item .avatar-dot { width: 32px; height: 32px; margin-top: 2px; }
+  .comment-main { flex: 1; }
+  .comment-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+  .comment-author { font-size: 13px; font-weight: 700; }
+  .comment-author.external { color: var(--text-secondary); font-weight: 600; }
+  .comment-time { font-size: 12px; color: var(--text-tertiary); }
+  .comment-body { font-size: 14px; color: var(--text-primary); line-height: 1.55; margin: 0 0 8px; }
+  .comment-actions { display: flex; align-items: center; gap: 14px; font-size: 12px; color: var(--text-tertiary); }
+  .comment-actions button {
+    background: none; border: none; padding: 0; font: inherit; color: inherit; cursor: pointer;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .comment-actions button:hover { color: var(--brand-red); }
+
+  .comment-replies { margin-top: 12px; padding-left: 44px; display: flex; flex-direction: column; gap: 14px; }
+  .comment-replies .comment-item { border-top: none; padding: 0; }
+
+  footer.note {
+    margin-top: 80px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-hairline);
+    font-size: 12px;
+    color: var(--text-tertiary);
+    line-height: 1.6;
+  }
+
+  /* ---------- Screen switcher (이 목업 전용 — 실제 화면은 아님) ---------- */
+  .screen-switcher {
+    display: flex;
+    gap: 8px;
+    background: var(--surface-muted);
+    border-radius: var(--radius-badge);
+    padding: 4px;
+    max-width: fit-content;
+    margin: 0 auto var(--space-6);
+  }
+  .screen-tab {
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .screen-tab.active { background: var(--surface); color: var(--text-primary); box-shadow: var(--shadow-card); }
+  .screen-note {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-disabled);
+    margin: -20px 0 var(--space-5);
+  }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ---------- Post detail (문서 상세 화면) ---------- */
+  .post-detail-hero {
+    height: 220px;
+    border-radius: var(--radius-card);
+    background: linear-gradient(135deg, #ffe4e9 0%, #ffd0d8 45%, #e4002B 100%);
+    margin-bottom: var(--space-5);
+  }
+  .post-detail-title {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    line-height: 1.35;
+    margin: 0 0 12px;
+  }
+  .post-detail-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-tertiary);
+    margin-bottom: var(--space-5);
+    padding-bottom: var(--space-5);
+    border-bottom: 1px solid var(--border-hairline);
+  }
+  .post-detail-body {
+    font-size: 15px;
+    line-height: 1.75;
+    color: var(--text-primary);
+    margin-bottom: var(--space-6);
+  }
+  .post-detail-body p { margin: 0 0 16px; }
+
+  @media (max-width: 720px) {
+    .card-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="logo"><span class="dot"></span>S-FOOD Tech Blog</div>
+    <div class="nav-actions">
+      <button class="icon-btn" id="searchOpenBtn" aria-label="검색 열기">🔍</button>
+    </div>
+  </header>
+
+  <main class="page">
+
+    <div class="screen-switcher">
+      <button class="screen-tab active" data-screen="home">① 홈 화면 — 목록</button>
+      <button class="screen-tab" data-screen="detail">② 문서 상세 화면 — 본문 + 댓글</button>
+    </div>
+    <p class="screen-note">※ 탭 전환은 이 목업에서만 쓰는 장치입니다. 실제 서비스에서는 홈과 문서 상세가 서로 다른 URL/화면입니다.</p>
+
+    <!-- ============ 화면 ① 홈 — 1. 콘텐츠 목록 ============ -->
+    <section class="screen active" id="screen-home">
+      <h1 class="section-heading">전체 아티클</h1>
+      <p class="section-sub">우아한형제들 기술블로그의 담백한 리스트 구조 + Awwwards "Explore Articles" 카드 레이아웃을 참고했습니다.</p>
+
+      <div class="pill-row">
+        <button class="pill active">전체</button>
+        <button class="pill">Backend</button>
+        <button class="pill">Frontend</button>
+        <button class="pill">Infra</button>
+        <button class="pill">AI</button>
+        <button class="pill">Culture</button>
+      </div>
+
+      <div class="card-grid">
+        <article class="post-card" data-goto-detail>
+          <div class="post-thumb"><span class="post-tag">Backend</span></div>
+          <div class="post-body">
+            <h3 class="post-title">한꺼번에 짊어지던 배치를 하나씩 흘려보내는 워크플로로</h3>
+            <p class="post-excerpt">무거운 워크플로 엔진 대신, 입맛대로 골라 뚝딱 만든 배치 처리 구조를 소개합니다.</p>
+            <div class="post-meta"><span class="avatar-dot"></span> 김현겸 · 2026.09.08</div>
+          </div>
+        </article>
+        <article class="post-card">
+          <div class="post-thumb alt2"><span class="post-tag">Culture</span></div>
+          <div class="post-body">
+            <h3 class="post-title">문서로만 지키던 아키텍처 규칙, 테스트 코드로 강제하기</h3>
+            <p class="post-excerpt">팀 아키텍처 및 코딩 규칙을 ArchUnit 테스트로 강제하기까지의 시행착오를 정리했습니다.</p>
+            <div class="post-meta"><span class="avatar-dot"></span> 박공손 · 2026.09.07</div>
+          </div>
+        </article>
+        <article class="post-card">
+          <div class="post-thumb alt3"><span class="post-tag">AI</span></div>
+          <div class="post-body">
+            <h3 class="post-title">AI가 분석한 리서치 결과, 어떻게 전달할까요?</h3>
+            <p class="post-excerpt">LLM 분석을 안정적으로 맡기는 프롬프트 구조와 SSE 기반 전달 UX를 정리했습니다.</p>
+            <div class="post-meta"><span class="avatar-dot"></span> 김한용 외 2명 · 2026.08.31</div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ============ 화면 ② 문서 상세 — 본문 + 3. 댓글 구성 ============ -->
+    <section class="screen" id="screen-detail">
+      <div class="post-detail-hero"></div>
+      <h1 class="post-detail-title">한꺼번에 짊어지던 배치를 하나씩 흘려보내는 워크플로로</h1>
+      <div class="post-detail-meta"><span class="avatar-dot"></span> 김현겸 · 2026.09.08 · Backend</div>
+      <div class="post-detail-body">
+        <p>토스뱅크 SDK 팀에서 카나리 배포를 프론트엔드 제품에 적용하면서 개발자들의 배포 경험을 개선한 사례를 소개합니다. (본문 예시 — 실제 문서 본문은 Confluence 컨버터를 거쳐 여기에 렌더링됩니다.)</p>
+        <p>변경 사항을 전체 사용자에 바로 적용하지 않고, 먼저 소수의 사용자에게만 적용해보고 문제가 없다는 것을 확인한 후 점진적으로 확대 적용하는 방식으로 리스크를 관리했습니다.</p>
+      </div>
+
+      <div class="comment-section">
+        <h2 class="section-heading" style="font-size:22px; margin-top:0;">댓글</h2>
+        <p class="section-sub">이 영역은 문서 상세 화면 맨 아래에만 존재합니다(홈 화면에는 없음). Dribbble의 Comment Section(Rener Aljustyo) · Comment Section UI(Leonard Victor) 구조를 조합했습니다. 로그인 여부에 따라 작성자 표시 방식이 다릅니다.</p>
+
+        <div class="comment-composer">
+          <span class="avatar-dot"></span>
+          <div class="composer-body">
+            <textarea placeholder="댓글을 남겨보세요"></textarea>
+            <div class="composer-footer">
+              <span class="login-hint">MS 계정으로 로그인하면 실명으로 댓글이 남습니다</span>
+              <button class="btn-primary">MS 계정으로 댓글 작성</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="comment-list-header">
+          <span class="comment-count">댓글 3개</span>
+          <select class="sort-select">
+            <option>최신순</option>
+            <option>공감순</option>
+          </select>
+        </div>
+
+        <div class="comment-item">
+          <span class="avatar-dot"></span>
+          <div class="comment-main">
+            <div class="comment-head">
+              <span class="comment-author">이도현</span>
+              <span class="comment-time">3시간 전</span>
+            </div>
+            <p class="comment-body">카나리 배포 부분 정말 흥미롭게 읽었습니다. 저희 팀도 비슷한 문제를 겪고 있어서 많은 참고가 됐어요.</p>
+            <div class="comment-actions">
+              <button>👍 12</button>
+              <button id="replyToggle">💬 답글 2개</button>
+            </div>
+
+            <div class="comment-replies" id="replyList" style="display:none;">
+              <div class="comment-item">
+                <span class="avatar-dot"></span>
+                <div class="comment-main">
+                  <div class="comment-head">
+                    <span class="comment-author">박서연</span>
+                    <span class="comment-time">2시간 전</span>
+                  </div>
+                  <p class="comment-body">저도 동의합니다. 캐시 정책 부분이 특히 도움이 됐어요.</p>
+                  <div class="comment-actions"><button>👍 4</button><button>답글</button></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="comment-item">
+          <span class="avatar-dot"></span>
+          <div class="comment-main">
+            <div class="comment-head">
+              <span class="comment-author external">익명 (외부 방문자)</span>
+              <span class="comment-time">어제</span>
+            </div>
+            <p class="comment-body">비로그인으로도 댓글을 남길 수 있어서 편했습니다. 좋은 글 감사합니다!</p>
+            <div class="comment-actions"><button>👍 5</button><button>답글</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="note">
+      이 페이지는 <code>docs/guide/design-benchmark.md</code>에서 정리한 벤치마킹 결과를 <code>design-system.md</code>의 색상·라운드·그림자·타이포그래피 토큰으로 표현한 구조 검증용 정적 목업입니다. 실제 이미지 대신 그라데이션 블록을 썸네일로 사용했으며, 화면 ①·②는 실제로는 별도 URL(`/`와 `/posts/{slug}`)입니다.
+    </footer>
+
+  </main>
+
+  <!-- ============ 2. 검색 영역 (오버레이) ============ -->
+  <div class="search-overlay" id="searchOverlay">
+    <button class="icon-btn search-close" id="searchCloseBtn" aria-label="검색 닫기">✕</button>
+    <div class="logo"><span class="dot"></span>S-FOOD Tech Blog</div>
+    <div class="search-box">
+      <span>🔍</span>
+      <input type="text" id="searchInput" placeholder="궁금한 주제를 검색해보세요" autocomplete="off" />
+    </div>
+    <div class="search-results" id="searchResults">
+      <div class="search-result-row">
+        <div>
+          <h4 class="post-title">한꺼번에 짊어지던 배치를 하나씩 흘려보내는 워크플로로</h4>
+          <p class="post-excerpt">무거운 워크플로 엔진 대신, 입맛대로 골라 뚝딱 만든 배치 처리 구조를 소개합니다.</p>
+        </div>
+        <div class="search-result-thumb"></div>
+      </div>
+      <div class="search-result-row">
+        <div>
+          <h4 class="post-title">배포 없이 앱과 로컬 웹을 잇다</h4>
+          <p class="post-excerpt">CloudFront 리다이렉트와 WebSocket 터널로 실시간 개발 환경을 구성한 과정을 소개합니다.</p>
+        </div>
+        <div class="search-result-thumb"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const overlay = document.getElementById('searchOverlay');
+    document.getElementById('searchOpenBtn').addEventListener('click', () => {
+      overlay.classList.add('open');
+      document.getElementById('searchInput').focus();
+    });
+    document.getElementById('searchCloseBtn').addEventListener('click', () => {
+      overlay.classList.remove('open');
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') overlay.classList.remove('open');
+    });
+
+    const replyToggle = document.getElementById('replyToggle');
+    const replyList = document.getElementById('replyList');
+    replyToggle.addEventListener('click', () => {
+      const isOpen = replyList.style.display !== 'none';
+      replyList.style.display = isOpen ? 'none' : 'flex';
+      replyToggle.textContent = isOpen ? '💬 답글 2개' : '💬 답글 접기';
+    });
+
+    // 화면 전환(홈 ↔ 문서 상세) — 이 목업 전용 장치
+    const tabs = document.querySelectorAll('.screen-tab');
+    const screens = document.querySelectorAll('.screen');
+    function showScreen(name) {
+      tabs.forEach((t) => t.classList.toggle('active', t.dataset.screen === name));
+      screens.forEach((s) => s.classList.toggle('active', s.id === `screen-${name}`));
+      window.scrollTo(0, 0);
+    }
+    tabs.forEach((tab) => tab.addEventListener('click', () => showScreen(tab.dataset.screen)));
+    document.querySelector('[data-goto-detail]').addEventListener('click', () => showScreen('detail'));
+  </script>
+
+</body>
+</html>

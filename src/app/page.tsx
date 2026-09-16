@@ -1,5 +1,9 @@
-import Link from "next/link";
 import { listPublishedPosts } from "@/lib/viewer/posts";
+import { SiteHeader } from "@/components/layout/SiteHeader";
+import { SiteFooter } from "@/components/layout/SiteFooter";
+import { Hero } from "@/components/posts/Hero";
+import { PostCard } from "@/components/posts/PostCard";
+import { RecentCommentsSidebar } from "@/components/posts/RecentCommentsSidebar";
 
 // Confluence를 매 요청마다 직접 조회하지 않도록 짧은 주기로 재검증한다(ISR).
 export const revalidate = 60;
@@ -14,37 +18,46 @@ export default async function Home() {
     loadFailed = true;
   }
 
+  const [heroPost, ...restPosts] = posts;
+
   return (
-    <main className="page">
-      <h1 className="page-title">SFOOD IT Tech Blog</h1>
-      <p className="page-subtitle">SFOOD IT 담당 및 AX팀을 위한 사내 기술 블로그입니다.</p>
+    <>
+      <div className="wrap">
+        <SiteHeader variant="home" />
 
-      {loadFailed && (
-        <p className="error-text">
-          문서 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
-        </p>
-      )}
+        {loadFailed && (
+          <p className="error-text" style={{ margin: "24px 0" }}>
+            문서 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
+          </p>
+        )}
 
-      {!loadFailed && posts.length === 0 && (
-        <p className="empty-state">아직 게시된 문서가 없습니다.</p>
-      )}
+        {!loadFailed && posts.length === 0 && (
+          <p className="empty-state">아직 게시된 문서가 없습니다.</p>
+        )}
 
-      {posts.length > 0 && (
-        <ul className="doc-list">
-          {posts.map((post) => (
-            <li key={post.slug}>
-              <Link href={`/posts/${post.slug}`} className="doc-list-item">
-                <span className="doc-list-item-title">{post.title}</span>
-                {post.publishedAt && (
-                  <span className="doc-list-item-meta">
-                    {new Date(post.publishedAt).toLocaleDateString("ko-KR")}
-                  </span>
-                )}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-    </main>
+        {heroPost && <Hero post={heroPost} />}
+
+        {posts.length > 0 && (
+          <div className="content-layout">
+            <div>
+              <h2 className="section-heading">최신 글</h2>
+              {restPosts.length > 0 ? (
+                <div className="card-grid">
+                  {restPosts.map((post) => (
+                    <PostCard key={post.slug} post={post} />
+                  ))}
+                </div>
+              ) : (
+                <p className="empty-state">아직 다른 글이 없습니다.</p>
+              )}
+            </div>
+
+            <RecentCommentsSidebar items={[]} />
+          </div>
+        )}
+      </div>
+
+      <SiteFooter />
+    </>
   );
 }

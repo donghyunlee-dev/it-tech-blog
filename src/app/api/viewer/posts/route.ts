@@ -10,6 +10,7 @@ export async function GET() {
         slug: post.slug,
         title: post.title,
         publishedAt: post.publishedAt,
+        metaDescription: post.metaDescription,
       })),
     });
   } catch (error) {

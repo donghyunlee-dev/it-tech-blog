@@ -1,11 +1,31 @@
+@import "@sfood/ui/tokens/base.css";
+@import "@sfood/ui/tokens/semantic.css";
+@tailwind base;
+@tailwind components;
+
+/*
+ * 브랜드 컬러·폰트는 사내 디자인 시스템(@sfood/ui)의 공식 토큰을 그대로 참조한다
+ * (docs/guide/design-system-adoption.md 2026-09-15 확정 — #e4002b 하드코딩 대신
+ * --color-brand 사용). 레이아웃 리듬(라운드 8/14/20/32px, 3-layer 그림자 등)은
+ * design-system.md에서 별도로 승인된 에디토리얼 전용 값이라 그대로 유지한다.
+ */
 :root {
-  --color-background: #ffffff;
-  --color-text-primary: #54585a;
-  --color-text-secondary: #6a6a6a;
-  --color-brand: #e4002b;
-  --color-surface: #f2f2f2;
+  --brand-red: var(--color-brand);
+  --brand-red-deep: var(--color-brand-hover);
+  --brand-red-tint: var(--color-brand-subtle);
+  --text-primary: #000000;
+  --text-secondary: #54585a;
+  --text-tertiary: #8a8d90;
+  --text-disabled: rgba(0, 0, 0, 0.24);
+  --surface: #ffffff;
+  --surface-muted: #f4f4f4;
+  --border-hairline: rgba(0, 0, 0, 0.08);
   --shadow-card: rgba(0, 0, 0, 0.02) 0px 0px 0px 1px, rgba(0, 0, 0, 0.04) 0px 2px 6px,
     rgba(0, 0, 0, 0.1) 0px 4px 8px;
+  --radius-button: 8px;
+  --radius-badge: 14px;
+  --radius-card: 20px;
+  --radius-large: 32px;
 }
 
 * {
@@ -14,9 +34,9 @@
 
 body {
   margin: 0;
-  background: var(--color-background);
-  color: var(--color-text-primary);
-  font-family: "맑은고딕", Pretendard, -apple-system, system-ui, Roboto, "Helvetica Neue", sans-serif;
+  background: var(--surface);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
   font-weight: 500;
 }
 
@@ -28,76 +48,883 @@ h3 {
 }
 
 a {
-  color: var(--color-text-primary);
+  color: var(--text-primary);
 }
 
-.page {
-  max-width: 960px;
+.wrap {
+  max-width: 1120px;
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: 0 24px;
 }
 
-.page-title {
-  font-size: 1.75rem;
-  line-height: 1.43;
+/* ---------- 시그니처 ①: 키커 라벨 ---------- */
+.kicker {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--brand-red);
+  margin-bottom: 8px;
+}
+
+/* ---------- 유틸리티 바 ---------- */
+.utility-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: var(--surface-muted);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.icon-btn:hover {
+  background: #ececec;
+}
+
+.icon-btn:active {
+  transform: scale(0.92);
+}
+
+/* ---------- 시그니처 ②: 마스트헤드 ---------- */
+.masthead {
+  text-align: center;
+  padding: 40px 0 32px;
+}
+
+.masthead .wordmark {
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin: 0;
+  text-decoration: none;
+  color: var(--text-primary);
+  display: inline-block;
+}
+
+.masthead .tagline {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 400;
+  margin: 8px 0 20px;
+}
+
+.masthead .rule {
+  height: 3px;
+  width: 64px;
+  background: var(--brand-red);
+  margin: 0 auto;
+  border-radius: 2px;
+}
+
+/* 상세 화면용 슬림 헤더 */
+.slim-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.slim-header .back-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+.slim-header .logo-mini {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+/* ---------- 카테고리 필터/둘러보기 (velog 벤치마크: 개수를 함께 보여준다) ---------- */
+.pill-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 24px 0 8px;
+}
+
+.pill {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 16px;
+  border-radius: var(--radius-badge);
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.pill.active {
+  background: var(--brand-red);
+  color: #fff;
+}
+
+.pill-count {
+  font-size: 11.5px;
+  font-weight: 700;
+  opacity: 0.6;
+}
+
+/* ---------- 시그니처 ③: 히어로(1면 기사) — 사진 대신 크기·타이포그래피로 무게를 준다 ---------- */
+.hero {
+  display: block;
+  padding: 40px 44px;
+  background: var(--brand-red-tint);
+  border-radius: var(--radius-large);
+  margin: 24px 0 48px;
+  cursor: pointer;
+  border-left: 4px solid var(--brand-red);
+  transition: border-left-width 0.15s ease, padding-left 0.15s ease;
+  color: inherit;
+  text-decoration: none;
+}
+
+.hero:hover {
+  border-left-width: 8px;
+  padding-left: 40px;
+}
+
+.hero-title {
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1.24;
+  margin: 0 0 16px;
+  max-width: 720px;
+}
+
+.hero-excerpt {
+  font-size: 15.5px;
+  color: var(--text-secondary);
+  line-height: 1.65;
+  margin: 0 0 20px;
+  max-width: 640px;
+}
+
+.hero-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+/* ---------- 목록 + 사이드바 레이아웃 ---------- */
+.content-layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 40px;
+  align-items: start;
+}
+
+.section-heading {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  margin: 0 0 20px;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+/* 텍스트 전용 카드가 기본값이다(velog와 동일). 본문에 실제 이미지가 있는 글만
+   .post-thumb를 선택적으로 붙인다 — 장식용 그라데이션이 아니라 실제 이미지가
+   들어갈 자리임을 그대로 보여주는 중립 회색 + 아이콘으로 둔다. */
+.post-card {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  padding-top: 14px;
+  border-top: 3px solid var(--border-hairline);
+  transition: transform 0.15s ease;
+}
+
+.post-card:hover {
+  transform: translateY(-2px);
+}
+
+.post-card:hover .post-title {
+  color: var(--brand-red);
+}
+
+.post-card.has-thumb {
+  padding-top: 0;
+  border-top: none;
+}
+
+.post-thumb {
+  border-radius: var(--radius-card);
+  height: 140px;
+  margin-bottom: 14px;
+  background: var(--surface-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-disabled);
+}
+
+.post-title {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.18px;
+  line-height: 1.4;
+  margin: 0 0 8px;
+  transition: color 0.15s ease;
+}
+
+.post-excerpt {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin: 0 0 12px;
+}
+
+.post-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+/* 사이드바: 최근 댓글 — 랭킹(경쟁) 대신 "공유와 전달"이 실제로 일어나는 모습을 보여준다 */
+.sidebar {
+  position: sticky;
+  top: 24px;
+}
+
+.sidebar-intro {
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+  margin: -12px 0 20px;
+  line-height: 1.5;
+}
+
+.recent-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.recent-item {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.recent-item:hover .recent-quote {
+  color: var(--brand-red);
+}
+
+.recent-quote {
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+  transition: color 0.15s ease;
+}
+
+.recent-quote::before {
+  content: "\201C";
+  color: var(--brand-red);
+  font-weight: 700;
+}
+
+.recent-quote::after {
+  content: "\201D";
+  color: var(--brand-red);
+  font-weight: 700;
+}
+
+.recent-meta {
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+}
+
+.recent-meta .recent-post-title {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* ---------- 상세 페이지 ---------- */
+.article-header {
+  max-width: 720px;
+  margin: 40px auto 0;
+  text-align: left;
+}
+
+.article-title {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1.28;
+  margin: 0 0 20px;
+}
+
+.byline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 24px;
+  margin-bottom: 32px;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.byline-sub {
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+}
+
+/* 실제로 본문에 이미지가 있는 글만 선택적으로 쓴다(강제하지 않음) */
+.article-hero {
+  max-width: 720px;
+  margin: 0 auto 36px;
+  border-radius: var(--radius-large);
+  overflow: hidden;
+  background: var(--surface-muted);
+}
+
+.article-hero img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* 2026-09-15: 시리즈 위젯은 실제 데이터 소스가 없음이 확인되어(SeriesWidget.tsx 삭제,
+   docs/tasks/viewer-publish-metadata-fix/result.md 참고) 관련 CSS도 함께 제거했다. */
+
+.article-body {
+  max-width: 680px;
+  margin: 0 auto;
+  font-size: 16px;
+  line-height: 1.78;
+  color: var(--text-primary);
+}
+
+.article-body p {
+  margin: 0 0 22px;
+}
+
+/* 리드 문단은 첫 문단이 실제로 <p>일 때만 적용한다 — 실제 문서에서 첫 요소가 <h2> 등
+   제목인 경우도 있는데, *:first-child로 넓게 잡으면 제목까지 리드 스타일(연한 톤)로
+   눌러버려 오히려 소제목보다 흐리게 보이는 버그가 있었다(2026-09-16 발견). */
+.article-body > p:first-child {
+  font-size: 18.5px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Confluence 컴포넌트 컨버터가 그대로 통과시키는 표준 요소들.
+   2026-09-16: Tailwind Preflight 도입 이후 브라우저 기본 스타일(제목 크기, 목록 불릿,
+   인용문 들여쓰기)이 사라져 본문이 전부 같은 크기로 평평해지는 회귀가 있었다 — 여기서 복구한다. */
+.article-body h1 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  line-height: 1.35;
+  margin: 48px 0 20px;
+}
+
+.article-body h2 {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  line-height: 1.4;
+  margin: 44px 0 18px;
+}
+
+.article-body h3 {
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 36px 0 14px;
+}
+
+.article-body ul {
+  list-style: disc;
+  margin: 0 0 22px;
+  padding-left: 22px;
+}
+
+.article-body ol {
+  list-style: decimal;
+  margin: 0 0 22px;
+  padding-left: 22px;
+}
+
+.article-body li {
+  margin-bottom: 8px;
+}
+
+.article-body li > p {
+  margin: 0;
+}
+
+.article-body blockquote {
+  margin: 28px 0;
+  padding: 4px 0 4px 20px;
+  border-left: 3px solid var(--border-hairline);
+  color: var(--text-secondary);
+  font-style: normal;
+}
+
+.article-body a {
+  color: var(--brand-red);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.article-body a:hover {
+  color: var(--brand-red-deep);
+}
+
+.article-body hr {
+  border: none;
+  border-top: 1px solid var(--border-hairline);
+  margin: 40px 0;
+}
+
+.article-body code {
+  background: var(--surface-muted);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.9em;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+/* Confluence "코드" 매크로는 .viewer-code 클래스가 붙은 <pre>로 변환되지만(converter.ts),
+   Editor 자체 코드 블록은 클래스 없는 순정 <pre><code>로 나오는 경우도 실제로 확인됐다
+   (2026-09-16, "컴포넌트 테스트" 문서). 둘 다 같은 코드 블록으로 보이도록 <pre> 자체에 스타일을
+   주고, 내부 <code>의 인라인 스타일(위 규칙)은 되돌린다. */
+.article-body pre {
+  background: var(--surface-muted);
+  border-radius: var(--radius-badge);
+  padding: 16px;
+  overflow-x: auto;
+  font-size: 0.88rem;
+  margin: 0 0 22px;
+}
+
+.article-body pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+}
+
+/* Confluence storage format에는 빈 <p></p>가 자주 섞여 들어온다(빈 줄 표시 목적).
+   문단 여백(margin-bottom: 22px)이 그대로 적용되면 의도치 않은 빈 공백이 쌓이므로 숨긴다. */
+.article-body p:empty {
+  display: none;
+}
+
+/* ---------- 시그니처 ④: 풀쿼트/콜아웃 (Confluence 정보 패널 컨버터 결과물) ---------- */
+.pullquote {
+  max-width: 680px;
+  margin: 36px auto;
+  padding: 4px 0 4px 24px;
+  border-left: 3px solid var(--brand-red);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.viewer-panel {
+  max-width: 680px;
+  margin: 28px auto;
+  padding: 20px 24px;
+  background: var(--surface-muted);
+  border-radius: var(--radius-card);
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.viewer-panel strong {
+  display: block;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+
+.viewer-panel-warning {
+  background: var(--brand-red-tint);
+}
+
+.related-section {
+  max-width: 680px;
+  margin: 56px auto 0;
+  padding-top: 32px;
+  border-top: 1px solid var(--border-hairline);
+}
+
+.related-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.related-card {
+  cursor: pointer;
+  padding: 14px 0;
+  border-top: 1px solid var(--border-hairline);
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.related-card:first-child {
+  border-top: none;
+}
+
+.related-title {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.related-card:hover .related-title {
+  color: var(--brand-red);
+}
+
+/* ---------- 댓글 ---------- */
+.comment-section {
+  max-width: 680px;
+  margin: 48px auto 0;
+}
+
+/* 댓글 작성 과정 — 화면 자체가 단계에 따라 바뀐다(순서를 표시만 하는 게 아니라).
+   ① 게이트: 댓글창 자체가 없다. 작성 방식만 고른다.
+   ② 확인: 고른 방식에 맞는 패널만 나타난다.
+   ③ 작성: 확인이 끝나야만 댓글 입력창이 나타난다.
+   2026-09-15 전면 도입: 게이트/확인 패널의 박스·버튼·입력창은 @sfood/ui의
+   Card/Button/Input/ColorTag를 쓰고, 확인 후 목록+작성창은 CommentThread를 쓴다
+   (댓글 아이템·답글·작성창 자체 CSS는 CommentThread 내부 스타일로 대체되어 제거했다).
+   여기 남은 것은 그 컴포넌트들로 표현할 수 없는 우리만의 여백/타이포 보정뿐이다. */
+.comment-gate,
+.identify-panel {
+  margin-bottom: 24px;
+}
+
+.comment-gate {
+  text-align: center;
+}
+
+.gate-lead {
+  font-size: 14.5px;
+  color: var(--text-secondary);
+  margin: 0 0 18px;
+}
+
+.gate-options {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.panel-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 14px;
+}
+
+.identify-fields {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.identity-confirmed-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.identity-confirmed-bar .who {
+  font-weight: 700;
+}
+
+.identity-confirmed-bar .how {
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+.composer-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  border-top: 1px solid var(--border-hairline);
+  padding-top: 12px;
+  flex-wrap: wrap;
+}
+
+.login-hint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+/* SiteFooter의 "RSS 구독하기"는 실제 이동(Link)이라 @sfood/ui Button(버튼 전용) 대신
+   기존 커스텀 클래스를 그대로 쓴다 — 버튼처럼 보이지만 실제로는 링크여야 하기 때문. */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  background: var(--brand-red);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-button);
+  padding: 9px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: var(--brand-red-deep);
+}
+
+.comment-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.comment-count {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* ---------- 시그니처 ⑤: 하단 북엔드(구독 밴드) + 푸터 ---------- */
+.subscribe-band {
+  margin-top: 80px;
+  background: var(--brand-red-tint);
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.subscribe-band h3 {
+  font-size: 20px;
+  font-weight: 700;
   margin: 0 0 8px;
 }
 
-.page-subtitle {
-  color: var(--color-text-secondary);
-  font-weight: 400;
-  margin: 0 0 24px;
+.subscribe-band p {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  margin: 0 0 20px;
 }
 
-.card {
-  background: var(--color-background);
-  border-radius: 20px;
-  box-shadow: var(--shadow-card);
-  padding: 24px;
+footer.site-footer {
+  padding: 40px 24px 48px;
 }
 
-.card + .card {
-  margin-top: 16px;
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 32px;
+  margin-bottom: 32px;
 }
 
+.footer-brand .wordmark-mini {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.footer-brand p {
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+  line-height: 1.6;
+}
+
+.footer-col h4 {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  margin: 0 0 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.footer-col a {
+  display: block;
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  margin-bottom: 8px;
+}
+
+.footer-bottom {
+  font-size: 12px;
+  color: var(--text-disabled);
+  border-top: 1px solid var(--border-hairline);
+  padding-top: 20px;
+}
+
+/* ---------- 검색 오버레이 ---------- */
+.search-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(6px);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12vh 24px 24px;
+  overflow-y: auto;
+}
+
+.search-close {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+}
+
+.search-intro {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.search-heading {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  margin: 0 0 16px;
+}
+
+.search-rule {
+  height: 3px;
+  width: 48px;
+  background: var(--brand-red);
+  margin: 0 auto;
+  border-radius: 2px;
+}
+
+.search-input-row {
+  width: min(600px, 100%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 2px solid var(--text-primary);
+  padding: 10px 4px 14px;
+  margin-bottom: 28px;
+  transition: border-color 0.15s ease;
+}
+
+.search-input-row:focus-within {
+  border-color: var(--brand-red);
+}
+
+.search-input-row svg {
+  flex: none;
+  color: var(--text-tertiary);
+}
+
+.search-input-row input {
+  border: none;
+  outline: none;
+  flex: 1;
+  background: transparent;
+  font-size: 22px;
+  font-family: inherit;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  color: var(--text-primary);
+}
+
+.search-input-row input::placeholder {
+  color: var(--text-disabled);
+  font-weight: 500;
+}
+
+.search-results {
+  width: min(600px, 100%);
+  margin-top: 8px;
+}
+
+.search-results-label {
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+  margin-bottom: 14px;
+}
+
+.search-result-row {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  padding: 16px 0;
+  border-top: 1px solid var(--border-hairline);
+  cursor: pointer;
+}
+
+.search-result-row:first-child {
+  border-top: none;
+}
+
+.search-result-row:hover .post-title {
+  color: var(--brand-red);
+}
+
+/* ---------- 공용 유틸리티 (폼/버튼/상태 문구) ---------- */
 .stack {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-family: inherit;
-  font-size: 1rem;
-  font-weight: 500;
-  padding: 0 24px;
-  height: 44px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-}
-
-.button-primary {
-  background: #222222;
-  color: #ffffff;
-}
-
-.button-primary:hover {
-  background: var(--color-brand);
-}
-
-.button-secondary {
-  background: var(--color-surface);
-  color: #222222;
-}
-
-.button-danger-outline {
-  background: transparent;
-  color: var(--color-brand);
-  border: 1px solid var(--color-brand);
 }
 
 .field {
@@ -113,82 +940,29 @@ a {
 
 .field input[type="text"],
 .field input[type="email"],
-.field textarea,
-.field select {
+.field textarea {
   font-family: inherit;
   font-size: 0.88rem;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 8px;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-button);
   padding: 10px 12px;
-  color: var(--color-text-primary);
-}
-
-.field textarea {
-  min-height: 320px;
-  resize: vertical;
-  line-height: 1.5;
+  color: var(--text-primary);
 }
 
 .empty-state {
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
   text-align: center;
   padding: 48px 16px;
 }
 
-.doc-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.doc-list-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px;
-  border-radius: 14px;
-  background: var(--color-background);
-  box-shadow: var(--shadow-card);
-  text-decoration: none;
-  color: inherit;
-}
-
-.doc-list-item-title {
-  font-weight: 600;
-}
-
-.doc-list-item-meta {
-  color: var(--color-text-secondary);
-  font-size: 0.81rem;
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  font-size: 0.69rem;
-  font-weight: 600;
-  padding: 2px 10px;
-  border-radius: 14px;
-  background: var(--color-surface);
-  color: #222222;
-}
-
-.badge-brand {
-  background: var(--color-brand);
-  color: #ffffff;
-}
-
 .error-text {
-  color: var(--color-brand);
+  color: var(--brand-red);
   font-size: 0.81rem;
 }
 
+/* ---------- Confluence 컴포넌트 컨버터 출력 ---------- */
 .viewer-content {
   line-height: 1.6;
-  margin: 24px 0 32px;
 }
 
 .viewer-content table.viewer-table {
@@ -199,39 +973,31 @@ a {
 
 .viewer-content table.viewer-table th,
 .viewer-content table.viewer-table td {
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--border-hairline);
   padding: 8px 12px;
   text-align: left;
 }
 
 .viewer-code {
-  background: var(--color-surface);
-  border-radius: 14px;
+  background: var(--surface-muted);
+  border-radius: var(--radius-badge);
   padding: 16px;
   overflow-x: auto;
   font-size: 0.88rem;
 }
 
-.viewer-panel {
-  border-radius: 14px;
-  padding: 16px;
-  margin: 16px 0;
-  background: var(--color-surface);
+@media (max-width: 860px) {
+  .content-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
-.viewer-panel strong {
-  display: block;
-  margin-bottom: 4px;
-}
-
-.viewer-panel-warning {
-  background: #fdecea;
-}
-
-.toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24px;
-  gap: 16px;
-}
+@tailwind utilities;

@@ -6,6 +6,7 @@ import {
   listFooterComments,
 } from "@/lib/confluence/client";
 import type { PublishMetadata } from "@/lib/viewer/publish-metadata";
+import { VIEWER_ID, type SourceDocument } from "@/lib/viewer/posts";
 import { NotFoundError, ValidationError } from "@/lib/errors";
 import { getSiteBaseUrl } from "@/lib/site";
 import { formatStructuredBody, parseStructuredBody } from "./structured-body";
@@ -116,7 +117,10 @@ export async function createComment(
   if (input.session) {
     authorType = "ms_user";
     authorEmail = input.session.email;
-    authorName = input.session.email.split("@")[0];
+    // 신원 확인 화면에서 사용자가 이름을 고칠 수 있도록 허용한다(design-direction.md 2026-09-14 결정).
+    // 이메일은 위조 방지를 위해 항상 세션 값을 사용하고 클라이언트 입력은 무시한다.
+    const editedName = (input.authorName ?? "").trim();
+    authorName = editedName || input.session.email.split("@")[0];
   } else {
     authorType = "external";
     authorName = (input.authorName ?? "").trim();
@@ -172,15 +176,15 @@ export async function getDocumentNotificationMeta(
   pageId: string
 ): Promise<DocumentNotificationMeta | null> {
   try {
-    const [page, authorMeta, publishMetadata] = await Promise.all([
-      getPage(pageId),
+    const [sourceDoc, authorMeta, publishMetadata] = await Promise.all([
+      getPageProperty<SourceDocument>(pageId, "sourceDocument"),
       getPageProperty<{ actualAuthorEmail?: string }>(pageId, "authorMeta"),
       getPageProperty<PublishMetadata>(pageId, "publishMetadata"),
     ]);
 
-    const slug = publishMetadata?.value?.slug;
+    const slug = publishMetadata?.value?.viewers?.[VIEWER_ID]?.publicSlug;
     return {
-      title: page.title,
+      title: sourceDoc?.value?.title ?? (await getPage(pageId)).title,
       url: slug ? `${getSiteBaseUrl()}/posts/${slug}` : getSiteBaseUrl(),
       authorEmail: authorMeta?.value?.actualAuthorEmail ?? null,
     };
