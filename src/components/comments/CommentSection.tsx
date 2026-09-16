@@ -40,11 +40,37 @@ interface Identity {
 type Stage = "gate" | "ms-confirm" | "guest-confirm" | "composer";
 
 const RETURN_TO_COOKIE = "ax_return_to";
+const PENDING_COMMENT_COOKIE = "ax_pending_comment";
+// 쿠키 한 개당 실제 한도(약 4KB)보다 여유 있게 잡는다 — 이름/속성 오버헤드 감안.
+const PENDING_COMMENT_COOKIE_MAX_LENGTH = 3500;
 
 function startAxAuthLogin(loginUrl: string) {
   const returnTo = `${window.location.pathname}${window.location.search}`;
   document.cookie = `${RETURN_TO_COOKIE}=${encodeURIComponent(returnTo)}; path=/; max-age=300; SameSite=Lax`;
   window.location.href = loginUrl;
+}
+
+interface PendingCommentDraft {
+  pageId: string;
+  parentCommentId?: string;
+  body: string;
+  authorName: string;
+}
+
+/**
+ * MS 로그인 사용자의 댓글 저장을 AX Auth 리다이렉트로 이어가기 전, 작성 중이던 내용을
+ * 쿠키에 잠깐 담아둔다. login_token은 발급 시점에만 얻을 수 있어(180초·1회성), 이미
+ * 세션이 있어도 댓글을 저장할 때마다 이 왕복을 거쳐야 알림 메일을 보낼 수 있다
+ * (mail-integration-guide.md, docs/tasks/viewer-comment-mail-token/ 참고).
+ * 쿠키 크기 한도를 넘으면 저장하지 않고 false를 반환해 호출부가 기존 방식(알림 없이 즉시
+ * 저장)으로 폴백하게 한다.
+ */
+function storePendingComment(draft: PendingCommentDraft): boolean {
+  const encoded = encodeURIComponent(JSON.stringify(draft));
+  if (encoded.length > PENDING_COMMENT_COOKIE_MAX_LENGTH) return false;
+
+  document.cookie = `${PENDING_COMMENT_COOKIE}=${encoded}; path=/; max-age=150; SameSite=Lax`;
+  return true;
 }
 
 function MsIcon() {
@@ -161,9 +187,8 @@ export function CommentSection({
     setStage("composer");
   }
 
-  async function postComment(body: string, parentCommentId?: string) {
+  async function submitCommentDirect(body: string, parentCommentId?: string) {
     if (!identity) return;
-    setSubmitError(null);
 
     try {
       const response = await fetch("/api/comments", {
@@ -185,6 +210,28 @@ export function CommentSection({
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다.");
     }
+  }
+
+  async function postComment(body: string, parentCommentId?: string) {
+    if (!identity) return;
+    setSubmitError(null);
+
+    // MS 로그인 사용자는 댓글을 저장할 때마다 AX Auth를 거쳐 신선한 login_token을 받아야
+    // 알림 메일을 보낼 수 있다 — 세션이 이미 있으므로 대부분 화면 깜빡임 없이 왕복된다.
+    if (identity.verified && loginUrl) {
+      const stored = storePendingComment({
+        pageId,
+        parentCommentId,
+        body,
+        authorName: identity.name,
+      });
+      if (stored) {
+        startAxAuthLogin(loginUrl);
+        return;
+      }
+    }
+
+    await submitCommentDirect(body, parentCommentId);
   }
 
   const totalCount = countAll(comments);
