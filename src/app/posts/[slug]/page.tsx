@@ -10,12 +10,28 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 
 interface PostPageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ error?: string }>;
 }
 
 // Confluence를 매 요청마다 직접 조회하지 않도록 짧은 주기로 재검증한다(ISR).
 export const revalidate = 60;
 
 type LoadedPost = PostRouteResult | { status: "error" };
+
+/**
+ * `/api/auth/ax-callback`이 인증 실패 시 붙이는 `?error=` 코드를 사람이 읽을 문구로 바꾼다.
+ * `comment_failed`는 댓글 저장 도중 인증에 실패해 작성 중이던 내용이 사라진 경우라 재입력을
+ * 명시적으로 안내한다 — 그 외(주로 로그인 트리거 실패)는 일반적인 재시도 안내로 충분하다.
+ */
+const AUTH_ERROR_MESSAGES: Record<string, string> = {
+  comment_failed: "댓글 인증에 실패해 작성 중이던 내용이 저장되지 않았습니다. 다시 입력해 주세요.",
+  missing_token: "로그인에 실패했습니다. 다시 시도해 주세요.",
+};
+
+function resolveAuthErrorMessage(code: string | undefined): string | null {
+  if (!code) return null;
+  return AUTH_ERROR_MESSAGES[code] ?? "요청 처리 중 문제가 발생했습니다. 다시 시도해 주세요.";
+}
 
 async function loadPost(slug: string): Promise<LoadedPost> {
   try {
@@ -49,8 +65,9 @@ export async function generateMetadata({
   };
 }
 
-export default async function PostPage({ params }: PostPageProps) {
+export default async function PostPage({ params, searchParams }: PostPageProps) {
   const { slug } = await params;
+  const { error } = await searchParams;
   const result = await loadPost(slug);
 
   // 게시 주소(slug)만 바뀐 문서 — 검색엔진·기존 링크가 링크 가치를 유지하도록 영구 리다이렉트한다.
@@ -142,6 +159,12 @@ export default async function PostPage({ params }: PostPageProps) {
               ))}
             </div>
           </section>
+        )}
+
+        {resolveAuthErrorMessage(error) && (
+          <p className="error-text" style={{ margin: "16px 0" }}>
+            {resolveAuthErrorMessage(error)}
+          </p>
         )}
 
         <CommentSection

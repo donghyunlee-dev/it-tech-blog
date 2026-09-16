@@ -170,7 +170,7 @@ Editor는 Phase E1(기반 설정) → E2(핵심 기능) → E3(운영 자동화)
 **Phase V3 — Comment 기능**
 - 목표: 댓글 작성 시에만 AX 로그인을 사용해, MS 로그인 사용자와 외부 사용자 모두 댓글을 작성하고 계층 구조로 열람할 수 있게 한다.
 - 포함 기능: MS 로그인 사용자 댓글 작성, 외부 사용자 댓글 작성, 대댓글 및 댓글 계층 조회(성능 최적화 포함), 댓글 알림 메일 발송
-- 진행 상태: "MS 계정으로 댓글 작성" 인라인 로그인 트리거 버튼을 구현했다 — 버튼 클릭 시 현재 게시글 경로를 쿠키(`ax_return_to`)에 저장한 뒤 AX Auth 로그인으로 이동하고, 콜백(`/api/auth/ax-callback`)이 그 쿠키를 읽어 원래 보던 게시글로 되돌아온다(기존에는 콜백이 삭제된 `/editor`로 하드코딩되어 있어 저장소 분리 이후 깨져 있던 경로였음 — 함께 수정). 실 AX Auth clientId로 `login.microsoftonline.com`까지 정상 도달하는 것을 확인했다(`docs/tasks/phase-v3-comment-login-trigger/` 참고). 댓글 알림 메일의 신선한 `login_token` 확보 UX는 별도 과제로 남아 있다.
+- 진행 상태: "MS 계정으로 댓글 작성" 인라인 로그인 트리거 버튼을 구현했다 — 버튼 클릭 시 현재 게시글 경로를 쿠키(`ax_return_to`)에 저장한 뒤 AX Auth 로그인으로 이동하고, 콜백(`/api/auth/ax-callback`)이 그 쿠키를 읽어 원래 보던 게시글로 되돌아온다(기존에는 콜백이 삭제된 `/editor`로 하드코딩되어 있어 저장소 분리 이후 깨져 있던 경로였음 — 함께 수정). 실 AX Auth clientId로 `login.microsoftonline.com`까지 정상 도달하는 것을 확인했다(`docs/tasks/phase-v3-comment-login-trigger/` 참고). 댓글 알림 메일의 신선한 `login_token` 확보 UX는 이미 로그인된 사용자도 댓글을 저장할 때마다 AX Auth 리다이렉트를 한 번 더 거치도록 해 해결했다(세션 재생성 없이 콜백에서 그 자리에서 댓글 생성·메일 발송을 완료 — `docs/tasks/viewer-comment-mail-token/` 참고).
 
 **Phase V4 — 운영 자동화**
 - 목표: 운영 이상 감지 체계를 갖추고, 리다이렉트·악용 방지를 마무리하고, Viewer를 통합 검증하여 안정적으로 배포한다.
