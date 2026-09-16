@@ -1,9 +1,12 @@
 import { listPublishedPosts } from "@/lib/viewer/posts";
+import { listRecentComments } from "@/lib/comments/comments";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { Hero } from "@/components/posts/Hero";
 import { PostCard } from "@/components/posts/PostCard";
 import { RecentCommentsSidebar } from "@/components/posts/RecentCommentsSidebar";
+
+const RECENT_COMMENTS_LIMIT = 4;
 
 // Confluence를 매 요청마다 직접 조회하지 않도록 짧은 주기로 재검증한다(ISR).
 export const revalidate = 60;
@@ -16,6 +19,13 @@ export default async function Home() {
     posts = await listPublishedPosts();
   } catch {
     loadFailed = true;
+  }
+
+  let recentComments: Awaited<ReturnType<typeof listRecentComments>> = [];
+  try {
+    recentComments = await listRecentComments(posts, RECENT_COMMENTS_LIMIT);
+  } catch {
+    recentComments = [];
   }
 
   const [heroPost, ...restPosts] = posts;
@@ -52,7 +62,15 @@ export default async function Home() {
               )}
             </div>
 
-            <RecentCommentsSidebar items={[]} />
+            <RecentCommentsSidebar
+              items={recentComments.map((comment) => ({
+                commentId: comment.commentId,
+                quote: comment.quote,
+                authorName: comment.authorName,
+                postSlug: comment.postSlug,
+                postTitle: comment.postTitle,
+              }))}
+            />
           </div>
         )}
       </div>
