@@ -18,6 +18,8 @@ architecture.md에서 정한 대로 본 서비스는 자체 데이터베이스�
 
 엔티티마다 Confluence API 상의 필드 구조를 기준으로 명세한다. 타입은 관계형 DB 타입이 아니라 Confluence API가 반환·저장하는 값의 형식이다.
 
+> **2026-09-15 정정**: 아래 Document/Publish Metadata 명세 중 `title`·`targetViewers`·평면 `slug`/`metaDescription`은 원래 의도했던 설계였으나, 실제 Editor 구현(`sfood-it-editor`의 `src/lib/editor/publish.ts`, `documents.ts`)과 실제 Confluence 데이터를 직접 대조한 결과 다르게 구현되어 있음을 확인했다. 이 문서는 **실제 구현 기준**으로 갱신했다. Viewer 쪽 반영은 [viewer-publish-metadata-fix/result.md](../tasks/viewer-publish-metadata-fix/result.md) 참고.
+
 ### Document (Confluence Page)
 
 | 필드 | 타입 | 제약조건 | 설명 |
@@ -25,27 +27,43 @@ architecture.md에서 정한 대로 본 서비스는 자체 데이터베이스�
 | pageId | string | 필수, Confluence 발급 고유값 | 문서 식별자 |
 | spaceKey | string | 필수 | 문서가 속한 Confluence Space |
 | parentFolderId | string | 필수 | 작성자의 개인 폴더(Confluence 페이지) 식별자 |
-| title | string | 필수 | 문서 제목 |
+| ~~title~~ → Confluence 페이지 자체의 `title` | string | 필수, `randomUUID()` | **표시용 제목이 아니다.** Confluence는 페이지 제목이 Space 전체(다른 사용자 포함)에서 유니크해야 하는데 실제 제목("회의록" 등)은 충돌하기 쉬워, Editor가 의도적으로 무작위 UUID를 채워 충돌을 원천 차단한다(이 UUID는 `publicSlug` 생성에도 재사용됨 — 아래 Publish Metadata 참고). 화면에 보여줄 실제 제목은 아래 `sourceDocument.title`을 써야 한다. |
 | body | string(storage format) | 필수 | 문서 본문(Confluence 스토리지 포맷) |
 | attachments | array\<attachment\> | 선택 | 등록된 이미지 등 첨부파일 목록 |
 | authorAccountId | string | 필수, 단일 서비스 계정 값 고정 | Confluence 상에 기록되는 작성 계정(실제 작성자와 다를 수 있음) |
-| actualAuthorEmail | string | 필수, 애플리케이션 레벨 관리 | MS 로그인 기준 실제 작성자 이메일(별도 필드로 애플리케이션이 구분 표시) |
+| actualAuthorEmail | string | 필수, 애플리케이션 레벨 관리 | MS 로그인 기준 실제 작성자 이메일. Confluence content property `authorMeta`(`{ actualAuthorEmail }`)에 별도 저장됨 |
 | version | number | 필수, Confluence 버전 관리 값 | 동시 수정 충돌 감지에 사용 |
 | createdAt / updatedAt | datetime | 필수 | 생성·수정 일시 |
 
-### Publish Metadata (Confluence Content Properties)
+#### Source Document (Confluence Content Property `sourceDocument`)
+
+Editor 내부 편집기(Tiptap/ProseMirror)의 원본과 **문서의 실제 표시용 제목**을 담는 별도 content property. Editor `documents.ts`의 `createDocument()`가 `upsertPageProperty(pageId, "sourceDocument", { title, doc })`로 쓴다.
+
+| 필드 | 타입 | 설명 |
+|---|---|---|
+| title | string | 문서의 실제 표시용 제목. Viewer는 반드시 이 값을 쓴다(Confluence 페이지의 `title`은 UUID라 쓸 수 없음). |
+| doc | JSONContent | Tiptap/ProseMirror 편집기 원본 트리(Viewer는 사용하지 않음 — Viewer는 `body`(storage format)만 읽는다). |
+
+### Publish Metadata (Confluence Content Property `publishMetadata`)
 
 | 필드 | 타입 | 제약조건 | 설명 |
 |---|---|---|---|
 | pageId | string | 필수, Document 참조 | 대상 문서 식별자 |
 | isPublished | boolean | 필수, 기본값 false | 게시 여부 |
-| targetViewers | array\<string\> | 게시 시 필수 | 노출할 Viewer 목록(예: tech-blog) |
-| slug | string | 게시 시 필수, 유니크 | 공개 경로(고유 URL의 일부) |
-| canonicalUrl | string | 선택 | 대표 주소(canonical) |
-| metaDescription | string | 게시 시 필수 | 검색·공유용 설명 |
-| structuredDataType | string | 선택 | 구조화 데이터(JSON-LD)에 사용할 문서 성격 |
-| redirectFrom | array\<string\> | 선택 | 주소 변경/삭제 이력 관리를 위한 과거 slug 목록 |
 | publishedAt | datetime | 게시 시 필수 | 게시 일시 |
+| viewers | `Record<viewerId, PublishViewerMetadata>` | 게시 시 필수 | ~~`targetViewers: string[]`~~에서 변경됨 — 노출 대상 Viewer id(예: `"tech-blog"`)를 키로 하는 객체. 아래 `PublishViewerMetadata` 참고. |
+
+**PublishViewerMetadata** (위 `viewers` 객체의 값, viewer별로 하나씩):
+
+| 필드 | 타입 | 제약조건 | 설명 |
+|---|---|---|---|
+| slug | string | 게시 시 필수 | 작성자가 입력한 원본 slug. **전역 유니크가 보장되지 않으므로 공개 경로에 직접 쓰면 안 된다.** |
+| metaDescription | string | 게시 시 필수 | 검색·공유용 설명 |
+| publicSlug | string | 서버 생성, 유니크 | `${slug}-${Confluence 페이지 title(UUID)}` 형태로 Editor가 서버에서 계산하는 전역 유니크 값. **Viewer의 공개 경로(`/posts/{publicSlug}`)는 이 값을 써야 한다.** URL에서 페이지를 역으로 찾을 때는 마지막 `-` 뒤 36자 UUID로 조회한다. |
+
+> `canonicalUrl`/`structuredDataType`/`redirectFrom`은 Editor 어디에도 실제로 쓰는 코드가 없어 목록에서 제거했다(과거 설계 문서에만 존재했음). 필요해지면 그때 다시 설계·추가한다.
+>
+> **태그/카테고리**는 이 content property가 아니라 **Confluence 네이티브 페이지 레이블**로 구현되어 있다(`label(태그): string[]`, Editor 쪽 확인됨). Viewer가 카테고리·키커 라벨을 노출하려면 content property 조회가 아니라 별도의 레이블 조회 API(`GET /pages/{id}/labels`)를 호출해야 한다 — 현재 Viewer는 이 조회를 구현하지 않았다.
 
 ### Comment (Confluence Comment)
 
@@ -70,7 +88,7 @@ architecture.md에서 정한 대로 본 서비스는 자체 데이터베이스�
 ## 인덱스·제약조건
 
 - 별도 DB 인덱스는 없으며, 조회는 Confluence REST API 호출로 이루어진다.
-- `slug`는 게시 시 Viewer 노출 대상 내에서 유니크해야 하며, Editor 게시 설정 단계에서 애플리케이션 레벨로 중복 여부를 검증한다.
+- `publicSlug`(공개 경로에 실제로 쓰이는 값)는 Editor가 `${slug}-${페이지 UUID}` 형태로 서버에서 생성해 항상 전역 유니크함을 보장한다(애플리케이션 레벨의 별도 중복 검증 로직은 없음 — UUID 접미사로 충돌 자체가 구조적으로 불가능하게 만드는 방식).
 - 댓글 계층은 기본적으로 `commentId`/`parentCommentId` 관계를 반복 조회하여 구성한다. 댓글 수·계층이 늘어나 조회 속도가 저하되면, 문서별 전체 댓글을 한 번에 조회한 뒤 메모리에서 계층을 구성하는 방식으로 전환하여 API 호출 횟수를 최소화한다.
 - Viewer의 반복 조회 성능을 위해 Next.js ISR/엣지 캐시로 Confluence 응답을 짧은 주기로 캐싱한다(자체 DB 캐시 아님).
 

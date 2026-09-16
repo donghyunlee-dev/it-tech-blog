@@ -1,5 +1,7 @@
 # Design System Inspired SFOOD
 
+> **2026-09-15 갱신 — `@sfood/ui` 채택 완료**: 2026-09-14에는 `@sfood/ui@0.1.2`가 React 19에서 즉시 크래시하고 `CommentThread`도 미배포 상태라 적용이 불가했으나, 담당팀이 `0.1.3`으로 원인(React 미externalize)을 수정하고 `CommentThread`/`ColorTag`/`Highlight`/`MultiSelect`를 실제로 배포했다. 이 저장소는 React를 18.3.1로 낮추고 `@sfood/ui@0.1.3` + Tailwind를 도입해 실제 화면(댓글 게이트 흐름의 Card/Button/Input/CommentThread, 검색의 CommandPalette)에 반영했다 — 상세는 [design-system-adoption.md](design-system-adoption.md), [docs/tasks/viewer-editorial-ui/result.md](../tasks/viewer-editorial-ui/result.md) 참고. **브랜드 컬러는 이 문서의 `#e4002B`가 아니라 `@sfood/ui`의 공식 토큰 `--color-brand`(`#d65050`)가 기준**이다 — 아래 본문의 `#e4002B` 관련 서술은 과거 자체 토큰 시절 기록으로, 코드에서는 이미 `--color-brand`를 참조하도록 교체되었다(하드코딩 금지). 폰트도 `--font-sans`(Pretendard Variable 우선) 토큰을 따른다. 다만 라운드 스케일(8/14/20/32px)·3-layer 그림자 등 이 문서가 정의한 레이아웃 리듬은 에디토리얼 매거진 디자인 전용으로 별도 승인된 값이라 `@sfood/ui`의 자체 스케일로 대체하지 않고 그대로 유지한다.
+
 ## 1. Visual Theme & Atmosphere
 
 에쓰푸드의 디자인은 잘 정리된 컨설팅 페이퍼를 보듯이, 간결하고, 핵심 메세지 중심이며, 시각화(도표, 표, 차트)를 적절히 사용하여 한 눈에 잘 읽히도록 한다. 디자인은 순백색(#ffffff)를 기반으로 하며, 상징 색깔인 에쓰푸드 레드(**#e4002B**)를 핵심 브랜드 포인트 컬러로 사용한다. 

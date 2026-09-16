@@ -1,0 +1,995 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tech Blog 에디토리얼 디자인 방향 목업</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<style>
+  :root {
+    --brand-red: #e4002B;
+    --brand-red-deep: #b8001f;
+    --brand-red-tint: #fdecef;
+    --text-primary: #000000;
+    --text-secondary: #54585A;
+    --text-tertiary: #8a8d90;
+    --text-disabled: rgba(0, 0, 0, 0.24);
+    --surface: #ffffff;
+    --surface-muted: #f4f4f4;
+    --border-hairline: rgba(0, 0, 0, 0.08);
+    --shadow-card: rgba(0, 0, 0, 0.02) 0px 0px 0px 1px, rgba(0, 0, 0, 0.04) 0px 2px 6px, rgba(0, 0, 0, 0.1) 0px 4px 8px;
+    --radius-button: 8px;
+    --radius-badge: 14px;
+    --radius-card: 20px;
+    --radius-large: 32px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--surface);
+    color: var(--text-primary);
+    font-family: "Pretendard", "맑은고딕", -apple-system, system-ui, Roboto, "Helvetica Neue", sans-serif;
+    font-weight: 500;
+  }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- 시그니처 ①: 키커 라벨 ---------- */
+  .kicker {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--brand-red);
+    margin-bottom: 8px;
+  }
+
+  /* ---------- 유틸리티 바 ---------- */
+  .utility-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border-hairline);
+  }
+  .utility-links { display: flex; gap: 20px; }
+  .utility-links a {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+  .utility-links a.active, .utility-links a:hover { color: var(--text-primary); }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: none; background: var(--surface-muted); color: var(--text-primary);
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+  .icon-btn:hover { background: #ececec; }
+  .icon-btn:active { transform: scale(0.92); }
+
+  /* ---------- 시그니처 ②: 마스트헤드 ---------- */
+  .masthead {
+    text-align: center;
+    padding: 40px 0 32px;
+  }
+  .masthead .wordmark {
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin: 0;
+  }
+  .masthead .tagline {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 400;
+    margin: 8px 0 20px;
+  }
+  .masthead .rule {
+    height: 3px;
+    width: 64px;
+    background: var(--brand-red);
+    margin: 0 auto;
+    border-radius: 2px;
+  }
+
+  /* 상세 화면용 슬림 헤더 */
+  .slim-header {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border-hairline);
+  }
+  .slim-header .back-link {
+    font-size: 13px; font-weight: 600; color: var(--text-secondary); text-decoration: none;
+    display: flex; align-items: center; gap: 6px; cursor: pointer; background: none; border: none;
+  }
+  .slim-header .logo-mini { font-size: 15px; font-weight: 700; }
+
+  /* ---------- 카테고리 필터 (velog 벤치마크: 개수를 함께 보여준다) ---------- */
+  .pill-row { display: flex; gap: 8px; overflow-x: auto; padding: 24px 0 8px; }
+  .pill {
+    flex: none; display: flex; align-items: center; gap: 5px;
+    padding: 8px 16px; border-radius: var(--radius-badge);
+    background: var(--surface-muted); color: var(--text-secondary);
+    font-size: 13px; font-weight: 600; border: none; cursor: pointer; white-space: nowrap;
+  }
+  .pill.active { background: var(--brand-red); color: #fff; }
+  .pill-count { font-size: 11.5px; font-weight: 700; opacity: 0.6; }
+
+  /* ---------- 시그니처 ③: 히어로(1면 기사) — 사진이 아니라 크기·타이포그래피로 무게를 준다.
+     velog 조사 결과 기술 블로그는 썸네일이 없는 게 기본이라, "사진 대체용 그라데이션"을 걷어내고
+     텍스트 자체를 크게 키우는 방식으로 1면 기사 느낌을 낸다. ---------- */
+  .hero {
+    padding: 40px 44px;
+    background: var(--brand-red-tint);
+    border-radius: var(--radius-large);
+    margin: 24px 0 48px;
+    cursor: pointer;
+    border-left: 4px solid var(--brand-red);
+    transition: border-left-width 0.15s ease, padding-left 0.15s ease;
+  }
+  .hero:hover { border-left-width: 8px; padding-left: 40px; }
+  .hero-title {
+    font-size: 38px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    line-height: 1.24;
+    margin: 0 0 16px;
+    max-width: 720px;
+  }
+  .hero-excerpt {
+    font-size: 15.5px;
+    color: var(--text-secondary);
+    line-height: 1.65;
+    margin: 0 0 20px;
+    max-width: 640px;
+  }
+  .hero-meta { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-tertiary); }
+
+  /* ---------- 목록 + 사이드바 레이아웃 ---------- */
+  .content-layout {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 40px;
+    align-items: start;
+  }
+  .section-heading {
+    font-size: 20px; font-weight: 700; letter-spacing: -0.2px;
+    margin: 0 0 20px;
+  }
+  .card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+
+  /* 텍스트 전용 카드가 기본값이다(velog와 동일). 본문에 실제 이미지가 있는 글만
+     .post-thumb를 선택적으로 붙인다 — "사진이 없으면 어색한 빈 박스"가 아니라
+     애초에 그 자리를 요구하지 않는 레이아웃.
+     썸네일 자리는 장식용 그라데이션이 아니라 실제 이미지가 들어갈 자리임을 그대로 보여주는
+     중립 회색 + 아이콘으로 둔다("AI Slop" 체크리스트의 장식용 그라데이션 지양). */
+  .post-card {
+    cursor: pointer; padding-top: 14px; border-top: 3px solid var(--border-hairline);
+    transition: transform 0.15s ease;
+  }
+  .post-card:hover { transform: translateY(-2px); }
+  .post-card:hover .post-title { color: var(--brand-red); }
+  .post-card.has-thumb { padding-top: 0; border-top: none; }
+  .post-thumb {
+    border-radius: var(--radius-card);
+    height: 140px;
+    margin-bottom: 14px;
+    background: var(--surface-muted);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-disabled);
+  }
+  .post-title { font-size: 16px; font-weight: 600; letter-spacing: -0.18px; line-height: 1.4; margin: 0 0 8px; transition: color 0.15s ease; }
+  .post-excerpt { font-size: 13px; color: var(--text-secondary); line-height: 1.55; margin: 0 0 12px; }
+  .post-meta { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-tertiary); }
+
+  /* 사이드바: 최근 댓글 — 랭킹(경쟁) 대신 "공유와 전달"이 실제로 일어나는 모습을 보여준다 */
+  .sidebar { position: sticky; top: 24px; }
+  .sidebar-intro { font-size: 12.5px; color: var(--text-tertiary); margin: -12px 0 20px; line-height: 1.5; }
+  .recent-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 20px; }
+  .recent-item { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; }
+  .recent-item:hover .recent-quote { color: var(--brand-red); }
+  .recent-quote {
+    font-size: 13.5px; font-weight: 500; line-height: 1.5; color: var(--text-primary);
+    margin: 0 0 4px; transition: color 0.15s ease;
+  }
+  .recent-quote::before { content: "\201C"; color: var(--brand-red); font-weight: 700; }
+  .recent-quote::after { content: "\201D"; color: var(--brand-red); font-weight: 700; }
+  .recent-meta { font-size: 11.5px; color: var(--text-tertiary); }
+  .recent-meta .recent-post-title { color: var(--text-secondary); font-weight: 600; }
+
+  .pagination { display: flex; justify-content: center; gap: 6px; margin: 48px 0 0; }
+  .page-btn {
+    width: 32px; height: 32px; border-radius: 8px; border: none; background: transparent;
+    color: var(--text-secondary); font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .page-btn.active { background: var(--brand-red); color: #fff; }
+
+  /* ---------- 상세 페이지 ---------- */
+  .article-header { max-width: 720px; margin: 40px auto 0; text-align: left; }
+  .article-title {
+    font-size: 34px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.28;
+    margin: 0 0 20px;
+  }
+  .byline {
+    display: flex; align-items: center; gap: 12px; padding-bottom: 24px;
+    margin-bottom: 32px; border-bottom: 1px solid var(--border-hairline);
+  }
+  .byline-name { font-size: 14px; font-weight: 700; }
+  .byline-sub { font-size: 12.5px; color: var(--text-tertiary); }
+
+  /* 상세 페이지에는 이미지를 강제하지 않는다 — 실제로 본문에 이미지가 있는 글만
+     .article-hero를 선택적으로 쓴다(이 목업의 예시 글은 기술 글이라 의도적으로 미사용).
+     장식용 그라데이션 대신 실제 업로드된 이미지가 채울 중립 자리로 정의한다. */
+  .article-hero {
+    max-width: 720px; margin: 0 auto 36px;
+    height: 280px; border-radius: var(--radius-large);
+    background: var(--surface-muted);
+  }
+
+  /* velog 벤치마크: 연재물은 "관련 글"이 아니라 진행률이 있는 시리즈 위젯으로 보여준다 */
+  .series-panel {
+    max-width: 720px; margin: 0 auto 36px; padding: 18px 22px;
+    background: var(--surface-muted); border-radius: var(--radius-card); position: relative;
+  }
+  .series-ribbon {
+    position: absolute; top: 14px; right: 18px; color: var(--brand-red);
+  }
+  .series-label { font-size: 15px; font-weight: 700; margin-bottom: 10px; }
+  .series-toggle {
+    display: flex; align-items: center; gap: 6px; background: none; border: none; cursor: pointer;
+    font-family: inherit; font-size: 13px; font-weight: 600; color: var(--text-secondary); padding: 0;
+  }
+  .series-toggle .chevron { transition: transform 0.15s ease; }
+  .series-toggle.open .chevron { transform: rotate(180deg); }
+  .series-list {
+    list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px;
+  }
+  .series-list li {
+    display: flex; align-items: baseline; gap: 8px; font-size: 13.5px; color: var(--text-secondary); cursor: pointer;
+  }
+  .series-list li.current { color: var(--brand-red); font-weight: 700; }
+  .series-list li .series-idx { font-weight: 700; color: var(--text-disabled); width: 16px; flex: none; }
+  .series-nav {
+    display: flex; align-items: center; justify-content: space-between; margin-top: 14px;
+    padding-top: 14px; border-top: 1px solid var(--border-hairline);
+  }
+  .series-progress { font-size: 12.5px; color: var(--text-tertiary); font-weight: 600; }
+  .series-arrows { display: flex; gap: 6px; }
+  .series-arrows button {
+    width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--surface);
+    color: var(--text-secondary); cursor: pointer; box-shadow: var(--shadow-card);
+  }
+
+  .article-body { max-width: 680px; margin: 0 auto; font-size: 16px; line-height: 1.78; color: var(--text-primary); }
+  .article-body p { margin: 0 0 22px; }
+  .article-body .lede { font-size: 18.5px; color: var(--text-secondary); font-weight: 500; }
+
+  /* ---------- 시그니처 ④: 풀쿼트/콜아웃 ---------- */
+  .pullquote {
+    max-width: 680px; margin: 36px auto; padding: 4px 0 4px 24px;
+    border-left: 3px solid var(--brand-red);
+    font-size: 20px; font-weight: 600; letter-spacing: -0.2px; line-height: 1.5;
+    color: var(--text-primary);
+  }
+  .callout {
+    max-width: 680px; margin: 28px auto; padding: 20px 24px;
+    background: var(--surface-muted); border-radius: var(--radius-card);
+    font-size: 14px; color: var(--text-secondary); line-height: 1.6;
+  }
+  .callout strong { display: block; color: var(--text-primary); margin-bottom: 4px; font-size: 13px; }
+
+  .related-section { max-width: 680px; margin: 56px auto 0; padding-top: 32px; border-top: 1px solid var(--border-hairline); }
+  .related-list { display: flex; flex-direction: column; }
+  .related-card {
+    cursor: pointer; padding: 14px 0; border-top: 1px solid var(--border-hairline);
+    display: flex; align-items: baseline; gap: 10px;
+  }
+  .related-card:first-child { border-top: none; }
+  .related-title { font-size: 14px; font-weight: 600; line-height: 1.4; }
+  .related-card:hover .related-title { color: var(--brand-red); }
+
+  /* ---------- 댓글 ---------- */
+  .comment-section { max-width: 680px; margin: 48px auto 0; }
+  /* 댓글 작성 과정 — 화면 자체가 단계에 따라 바뀐다(순서를 표시만 하는 게 아니라).
+     ① 게이트: 댓글창 자체가 없다. 작성 방식만 고른다.
+     ② 확인: 고른 방식에 맞는 패널만 나타난다(MS 인증 진행 / 이름·이메일 입력).
+     ③ 작성: 확인이 끝나야만 댓글 입력창이 나타난다. */
+  .comment-gate {
+    background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow-card);
+    padding: 32px 24px; text-align: center; margin-bottom: 24px;
+  }
+  .gate-lead { font-size: 14.5px; color: var(--text-secondary); margin: 0 0 18px; }
+  .gate-options { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .gate-option {
+    display: flex; align-items: center; gap: 8px; font-family: inherit; font-size: 13.5px; font-weight: 600;
+    padding: 11px 20px; border-radius: var(--radius-button); border: none; cursor: pointer;
+    background: var(--brand-red); color: #fff; transition: opacity 0.15s ease;
+  }
+  .gate-option.secondary { background: var(--surface-muted); color: var(--text-primary); }
+  .gate-option:hover { opacity: 0.9; }
+
+  .identify-panel {
+    background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow-card);
+    padding: 22px 24px; margin-bottom: 24px;
+  }
+  .panel-label { font-size: 12px; font-weight: 700; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 14px; }
+  .identify-loading { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text-secondary); padding: 6px 0; }
+  .spinner {
+    width: 16px; height: 16px; border-radius: 50%; flex: none;
+    border: 2px solid var(--border-hairline); border-top-color: var(--brand-red);
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .identify-fields { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .identity-field {
+    flex: 1; min-width: 140px; font-family: inherit; font-size: 13.5px; font-weight: 500;
+    color: var(--text-primary); border: 1px solid var(--border-hairline); border-radius: var(--radius-button);
+    padding: 9px 12px; background: var(--surface);
+  }
+  .identity-field::placeholder { color: var(--text-disabled); }
+  .identity-verified-tag {
+    flex: none; display: flex; align-items: center; font-size: 12.5px; font-weight: 600; color: #1a7f4e;
+    background: #eaf7f0; border-radius: var(--radius-badge); padding: 9px 14px; white-space: nowrap;
+  }
+  .btn-secondary-sm {
+    background: none; border: none; color: var(--text-tertiary); font-family: inherit;
+    font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 9px 4px;
+  }
+
+  .identity-confirmed-bar {
+    display: flex; align-items: center; gap: 8px; font-size: 13px;
+    margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--border-hairline);
+  }
+  .identity-confirmed-bar .who { font-weight: 700; }
+  .identity-confirmed-bar .how { color: var(--text-tertiary); font-weight: 500; }
+  .identity-confirmed-bar .switch-btn {
+    margin-left: auto; background: none; border: none; color: var(--text-tertiary);
+    font-family: inherit; font-size: 12px; text-decoration: underline; cursor: pointer;
+  }
+
+  .comment-composer {
+    background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow-card);
+    padding: 20px; margin-bottom: 24px;
+  }
+  .composer-body textarea {
+    width: 100%; border: none; resize: none; outline: none; font-family: inherit;
+    font-size: 14px; font-weight: 500; color: var(--text-primary); min-height: 64px;
+  }
+  .composer-body textarea::placeholder { color: var(--text-disabled); }
+
+  .composer-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 10px; border-top: 1px solid var(--border-hairline); padding-top: 12px;
+  }
+  .login-hint { font-size: 12px; color: var(--text-tertiary); }
+  .btn-primary {
+    background: var(--brand-red); color: #fff; border: none; border-radius: var(--radius-button);
+    padding: 9px 20px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer;
+  }
+  .btn-primary:hover { background: var(--brand-red-deep); }
+
+  .comment-list-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .comment-count { font-size: 16px; font-weight: 700; }
+  .sort-select { font-size: 13px; color: var(--text-secondary); font-weight: 500; border: none; background: transparent; }
+
+  .comment-item { display: flex; gap: 12px; padding: 16px 0; border-top: 1px solid var(--border-hairline); }
+  .comment-item:first-child { border-top: none; }
+  .comment-main { flex: 1; }
+  .comment-item-new { animation: commentFlash 1.6s ease; border-radius: 12px; }
+  @keyframes commentFlash {
+    0% { background: var(--brand-red-tint); }
+    100% { background: transparent; }
+  }
+  .comment-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+  .comment-author { font-size: 13px; font-weight: 700; }
+  .comment-author.external { color: var(--text-secondary); font-weight: 600; }
+  .comment-time { font-size: 12px; color: var(--text-tertiary); }
+  .comment-body { font-size: 14px; line-height: 1.55; margin: 0 0 8px; }
+  .comment-actions { display: flex; align-items: center; gap: 14px; font-size: 12px; color: var(--text-tertiary); }
+  .comment-actions button { background: none; border: none; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+  .comment-actions button:hover { color: var(--brand-red); }
+  .comment-replies { margin-top: 12px; padding-left: 44px; display: flex; flex-direction: column; gap: 14px; }
+  .comment-replies .comment-item { border-top: none; padding: 0; }
+
+  /* ---------- 시그니처 ⑤: 하단 북엔드(구독 밴드) + 푸터 ---------- */
+  .subscribe-band {
+    margin-top: 80px;
+    background: var(--brand-red-tint);
+    padding: 40px 24px;
+    text-align: center;
+  }
+  .subscribe-band h3 { font-size: 20px; font-weight: 700; margin: 0 0 8px; }
+  .subscribe-band p { font-size: 13.5px; color: var(--text-secondary); margin: 0 0 20px; }
+  .subscribe-form { display: flex; justify-content: center; gap: 8px; }
+  .subscribe-form input {
+    width: 260px; padding: 10px 14px; border-radius: var(--radius-button);
+    border: 1px solid var(--border-hairline); font-family: inherit; font-size: 13.5px;
+  }
+
+  footer.site-footer { padding: 40px 24px 48px; }
+  .footer-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 32px; margin-bottom: 32px; }
+  .footer-brand .wordmark-mini { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .footer-brand p { font-size: 12.5px; color: var(--text-tertiary); line-height: 1.6; }
+  .footer-col h4 { font-size: 12px; font-weight: 700; color: var(--text-tertiary); margin: 0 0 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .footer-col a { display: block; font-size: 13px; color: var(--text-secondary); text-decoration: none; margin-bottom: 8px; }
+  .footer-bottom { font-size: 12px; color: var(--text-disabled); border-top: 1px solid var(--border-hairline); padding-top: 20px; }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  .screen-switcher {
+    display: flex; gap: 8px; background: var(--surface-muted); border-radius: var(--radius-badge);
+    padding: 4px; max-width: fit-content; margin: 16px auto 0;
+  }
+  .screen-tab { border: none; background: transparent; color: var(--text-secondary); font-family: inherit; font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 10px; cursor: pointer; }
+  .screen-tab.active { background: var(--surface); color: var(--text-primary); box-shadow: var(--shadow-card); }
+  .screen-note { text-align: center; font-size: 11px; color: var(--text-disabled); margin: 8px 0 0; }
+
+  /* ---------- 검색 오버레이 ---------- */
+  /* 마스트헤드(키커+큰 제목+레드 룰)와 같은 언어를 그대로 가져와 "이 화면도 우리 매체의 일부"임을 드러낸다 */
+  .search-overlay {
+    position: fixed; inset: 0; background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(6px);
+    z-index: 50; display: none; flex-direction: column; align-items: center;
+    padding: 12vh 24px 24px; overflow-y: auto;
+  }
+  .search-overlay.open { display: flex; }
+  .search-close { position: absolute; top: 24px; right: 24px; }
+
+  .search-intro { text-align: center; margin-bottom: 32px; }
+  .search-intro .kicker { display: block; }
+  .search-heading {
+    font-size: 30px; font-weight: 700; letter-spacing: -0.4px; margin: 0 0 16px;
+  }
+  .search-rule { height: 3px; width: 48px; background: var(--brand-red); margin: 0 auto; border-radius: 2px; }
+
+  .search-input-row {
+    width: min(600px, 100%); display: flex; align-items: center; gap: 14px;
+    border-bottom: 2px solid var(--text-primary); padding: 10px 4px 14px; margin-bottom: 28px;
+    transition: border-color 0.15s ease;
+  }
+  .search-input-row:focus-within { border-color: var(--brand-red); }
+  .search-input-row svg { flex: none; color: var(--text-tertiary); }
+  .search-input-row input {
+    border: none; outline: none; flex: 1; background: transparent;
+    font-size: 22px; font-family: inherit; font-weight: 600; letter-spacing: -0.3px; color: var(--text-primary);
+  }
+  .search-input-row input::placeholder { color: var(--text-disabled); font-weight: 500; }
+
+  .search-browse { width: min(600px, 100%); margin-bottom: 8px; }
+  .search-browse-label { font-size: 12px; font-weight: 700; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 10px; }
+  .search-browse .pill-row { padding: 0; margin: 0; }
+
+  .search-results { width: min(600px, 100%); margin-top: 8px; }
+  .search-results-label { font-size: 12.5px; color: var(--text-tertiary); margin-bottom: 14px; }
+  .search-result-row {
+    display: flex; align-items: center; gap: 16px; padding: 16px 0;
+    border-top: 1px solid var(--border-hairline); cursor: pointer;
+  }
+  .search-result-row:first-child { border-top: none; }
+  .search-result-row:hover .post-title { color: var(--brand-red); }
+
+  @media (max-width: 860px) {
+    .content-layout { grid-template-columns: 1fr; }
+    .card-grid { grid-template-columns: 1fr; }
+    .footer-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="wrap">
+    <div class="utility-bar">
+      <div class="utility-links">
+        <a class="active" data-cat="all">전체</a>
+        <a data-cat="backend">Backend</a>
+        <a data-cat="frontend">Frontend</a>
+        <a data-cat="infra">Infra</a>
+        <a data-cat="ai">AI</a>
+        <a data-cat="culture">Culture</a>
+      </div>
+      <button class="icon-btn" id="searchOpenBtn" aria-label="검색 열기">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7.5"></circle><line x1="21" y1="21" x2="16.2" y2="16.2"></line></svg>
+      </button>
+    </div>
+
+    <!-- 홈 화면에서만 노출되는 마스트헤드 -->
+    <div class="masthead" id="masthead">
+      <p class="wordmark">S-FOOD TECH</p>
+      <p class="tagline">에쓰푸드 IT팀·AX팀의 기술 기록</p>
+      <div class="rule"></div>
+    </div>
+
+    <!-- 상세 화면 전용 슬림 헤더 -->
+    <div class="slim-header" id="slimHeader">
+      <button class="back-link" data-screen="home">← 목록으로</button>
+      <span class="logo-mini">S-FOOD TECH</span>
+      <span style="width:36px"></span>
+    </div>
+
+    <div class="screen-switcher">
+      <button class="screen-tab active" data-screen="home">① 홈 화면</button>
+      <button class="screen-tab" data-screen="detail">② 문서 상세 화면</button>
+    </div>
+    <p class="screen-note">※ 탭 전환은 목업 전용 장치. 실제로는 별도 URL(<code>/</code>, <code>/posts/{slug}</code>)</p>
+
+    <!-- ============ 화면 ① 홈 ============ -->
+    <section class="screen active" id="screen-home">
+
+      <div class="hero" data-goto-detail>
+        <span class="kicker">Backend · 엔지니어링 노트 9</span>
+        <h1 class="hero-title">한꺼번에 짊어지던 배치를 하나씩 흘려보내는 워크플로로</h1>
+        <p class="hero-excerpt">Temporal 도입은 무거웠고 배치는 그대로 둘 수 없었기에 — 입맛대로 골라 Claude로 뚝딱 만든 워크플로 엔진 개발기. 무거운 워크플로 엔진 대신, 우리 팀 사정에 맞는 배치 처리 구조를 소개합니다.</p>
+        <div class="hero-meta">김현겸 · 2026.09.08</div>
+      </div>
+
+      <div class="content-layout">
+        <div>
+          <h2 class="section-heading">최신 글</h2>
+          <div class="card-grid">
+            <article class="post-card has-thumb">
+              <div class="post-thumb">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"></rect><circle cx="9" cy="9" r="1.8"></circle><path d="M21 15l-5-5-7 7"></path></svg>
+              </div>
+              <span class="kicker">Culture</span>
+              <h3 class="post-title">문서로만 지키던 아키텍처 규칙, 테스트 코드로 강제하기</h3>
+              <p class="post-excerpt">팀 아키텍처 및 코딩 규칙을 ArchUnit 테스트로 강제하기까지의 시행착오를 정리했습니다. (본문에 다이어그램 이미지가 있어 썸네일이 자동으로 붙은 예시)</p>
+              <div class="post-meta">박공손 · 2026.09.07</div>
+            </article>
+            <article class="post-card">
+              <span class="kicker">AI</span>
+              <h3 class="post-title">AI가 분석한 리서치 결과, 어떻게 전달할까요?</h3>
+              <p class="post-excerpt">LLM 분석을 안정적으로 맡기는 프롬프트 구조와 SSE 기반 전달 UX를 정리했습니다.</p>
+              <div class="post-meta">김한용 외 2명 · 2026.08.31</div>
+            </article>
+            <article class="post-card">
+              <span class="kicker">Frontend</span>
+              <h3 class="post-title">배포 없이 앱과 로컬 웹을 잇다</h3>
+              <p class="post-excerpt">CloudFront 리다이렉트와 WebSocket 터널로 베타앱 웹뷰 요청을 로컬 서버로 보낸 과정을 소개합니다.</p>
+              <div class="post-meta">황창재 외 3명 · 2026.08.04</div>
+            </article>
+            <article class="post-card">
+              <span class="kicker">Infra</span>
+              <h3 class="post-title">멀티 어카운트 NACL 차단 자동화 도구 운영 경험</h3>
+              <p class="post-excerpt">수십 개 AWS 계정에 공격 IP를 차단하는 자동화를 운영하며 마주친 분산 시스템의 함정들을 정리했습니다.</p>
+              <div class="post-meta">이주호 · 2026.07.16</div>
+            </article>
+          </div>
+          <div class="pagination">
+            <button class="page-btn active">1</button>
+            <button class="page-btn">2</button>
+            <button class="page-btn">3</button>
+            <button class="page-btn">›</button>
+          </div>
+        </div>
+
+        <aside class="sidebar">
+          <h2 class="section-heading">최근 댓글</h2>
+          <p class="sidebar-intro">랭킹이 아니라, 지금 오가고 있는 이야기를 보여드립니다.</p>
+          <ul class="recent-list">
+            <li class="recent-item">
+              
+              <div>
+                <p class="recent-quote">재시도 정책 다음 글도 기대하고 있겠습니다</p>
+                <div class="recent-meta">이도현 · <span class="recent-post-title">한꺼번에 짊어지던 배치를...</span></div>
+              </div>
+            </li>
+            <li class="recent-item">
+              
+              <div>
+                <p class="recent-quote">저희 팀도 비슷한 고민을 하고 있어요</p>
+                <div class="recent-meta">박서연 · <span class="recent-post-title">문서로만 지키던 아키텍처 규칙...</span></div>
+              </div>
+            </li>
+            <li class="recent-item">
+              
+              <div>
+                <p class="recent-quote">프롬프트 구조 공유 감사합니다, 저희도 적용해봤어요</p>
+                <div class="recent-meta">익명(외부 방문자) · <span class="recent-post-title">AI가 분석한 리서치 결과...</span></div>
+              </div>
+            </li>
+            <li class="recent-item">
+              
+              <div>
+                <p class="recent-quote">이 부분 저희 팀 온보딩 자료로 써도 될까요?</p>
+                <div class="recent-meta">이주호 · <span class="recent-post-title">멀티 어카운트 NACL 차단...</span></div>
+              </div>
+            </li>
+          </ul>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ============ 화면 ② 문서 상세 ============ -->
+    <section class="screen" id="screen-detail">
+      <div class="article-header">
+        <span class="kicker">Backend</span>
+        <h1 class="article-title">한꺼번에 짊어지던 배치를 하나씩 흘려보내는 워크플로로</h1>
+        <div class="byline">
+          
+          <div>
+            <div class="byline-name">김현겸</div>
+            <div class="byline-sub">우아한형제들 · 2026.09.08 · 읽는 데 6분</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 이 글은 연재물이라 이미지 히어로 대신 시리즈 위젯을 쓴다(velog 벤치마크).
+           이미지가 있는 글이라면 .article-hero를 여기에 둘 수도 있다 — 강제하지 않는다. -->
+      <div class="series-panel">
+        <span class="series-ribbon">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6 2a2 2 0 0 0-2 2v18l8-5 8 5V4a2 2 0 0 0-2-2H6Z"/></svg>
+        </span>
+        <div class="series-label">시리즈 · 엔지니어링 노트</div>
+        <button class="series-toggle" id="seriesToggle">
+          <span class="chevron">▾</span> 목록 보기 (전체 9화)
+        </button>
+        <ul class="series-list" id="seriesList" style="display:none;">
+          <li><span class="series-idx">7</span> 온콜 부담을 줄인 알림 라우팅 재설계</li>
+          <li><span class="series-idx">8</span> 배포 파이프라인에 카나리 단계 끼워넣기</li>
+          <li class="current"><span class="series-idx">9</span> 한꺼번에 짊어지던 배치를 하나씩 흘려보내는 워크플로로</li>
+        </ul>
+        <div class="series-nav">
+          <span class="series-progress">9화 · 최신</span>
+          <span class="series-arrows">
+            <button aria-label="이전 화">‹</button>
+            <button aria-label="다음 화" disabled style="opacity:0.35;">›</button>
+          </span>
+        </div>
+      </div>
+
+      <div class="article-body">
+        <p class="lede">Temporal 도입은 무거웠고 배치는 그대로 둘 수 없었기에 — 입맛대로 골라 Claude로 뚝딱 만든 워크플로 엔진 개발기를 소개합니다.</p>
+        <p>기존 배치 시스템은 하나의 실패가 전체 파이프라인을 멈추게 했습니다. 문제가 생기면 처음부터 다시 돌려야 했고, 어디서 실패했는지 추적하기도 쉽지 않았습니다.</p>
+
+        <div class="pullquote">"실패한 부분만 다시 흘려보낼 수 있다면, 우리는 더 이상 배치 전체를 두려워하지 않아도 된다."</div>
+
+        <p>그래서 무거운 워크플로 엔진(Temporal 등)을 그대로 들여오는 대신, 우리 팀 사정에 맞는 가벼운 워크플로 구조를 직접 설계했습니다. 각 단계는 독립적으로 재시도 가능하고, 실패 지점부터 이어서 처리할 수 있습니다.</p>
+
+        <div class="callout">
+          <strong>정보</strong>
+          이 글에서 다루는 워크플로 엔진은 사내 전용으로, 외부 공개 계획은 없습니다. 구조에 대한 질문은 댓글로 남겨주세요.
+        </div>
+
+        <p>결과적으로 배치 실행 시간은 40% 줄었고, 장애 대응 시간도 눈에 띄게 짧아졌습니다. 다음 글에서는 이 워크플로 엔진에 재시도 정책을 어떻게 세분화했는지 다루겠습니다.</p>
+      </div>
+
+      <div class="related-section">
+        <h2 class="section-heading">관련 글</h2>
+        <div class="related-list">
+          <div class="related-card">
+            <span class="kicker" style="margin:0;">Backend</span>
+            <div class="related-title">BFF 서버에 SSE를 도입한 이유</div>
+          </div>
+          <div class="related-card">
+            <span class="kicker" style="margin:0;">Culture</span>
+            <div class="related-title">기술이 없던 곳에 기술 더하기: 사내 해커톤 플랫폼</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="comment-section">
+        <h2 class="section-heading">댓글</h2>
+
+        <!-- 1단계: 게이트 — 댓글창 자체가 보이지 않는다. 먼저 "누구로 참여할지"만 고른다. -->
+        <div class="comment-gate" id="commentGate">
+          <p class="gate-lead">댓글을 남기려면 먼저 작성자를 확인해주세요.</p>
+          <div class="gate-options">
+            <button class="gate-option" id="gateMsBtn">
+              <svg viewBox="0 0 23 23" width="15" height="15"><rect x="1" y="1" width="10" height="10" fill="#f25022"/><rect x="12" y="1" width="10" height="10" fill="#7fba00"/><rect x="1" y="12" width="10" height="10" fill="#00a4ef"/><rect x="12" y="12" width="10" height="10" fill="#ffb900"/></svg>
+              MS 계정으로 인증 (사내 직원)
+            </button>
+            <button class="gate-option secondary" id="gateGuestBtn">이름으로 계속하기 (외부 방문자)</button>
+          </div>
+        </div>
+
+        <!-- 2단계 (사내): MS 인증 진행/완료 패널. 처음엔 숨겨져 있다가 MS 버튼을 눌러야만 나타난다. -->
+        <div class="identify-panel" id="identifyMsPanel" hidden></div>
+
+        <!-- 2단계 (외부): 이름·이메일 확인 패널. "이름으로 계속하기"를 눌러야만 나타난다. -->
+        <div class="identify-panel" id="identifyGuestPanel" hidden>
+          <div class="panel-label">본인 확인</div>
+          <div class="identify-fields">
+            <input class="identity-field" id="guestNameInput" type="text" placeholder="이름" />
+            <input class="identity-field" id="guestEmailInput" type="email" placeholder="이메일" />
+          </div>
+          <div class="composer-footer" style="border-top:none; padding-top:0; margin-top:0;">
+            <span class="login-hint" id="guestHint">이름·이메일은 댓글에 그대로 표시됩니다</span>
+            <span style="display:flex; gap:8px;">
+              <button class="btn-secondary-sm" id="guestCancelBtn">취소</button>
+              <button class="btn-primary" id="guestConfirmBtn">확인하고 댓글 작성</button>
+            </span>
+          </div>
+        </div>
+
+        <!-- 3단계: 댓글 작성. 위 두 경로 중 하나로 확인이 끝나야만 나타난다. -->
+        <div class="comment-composer" id="commentComposer" hidden>
+          <div class="composer-body">
+            <div class="identity-confirmed-bar" id="identityConfirmed"></div>
+            <textarea id="commentBody" placeholder="댓글을 남겨보세요"></textarea>
+            <div class="composer-footer">
+              <span class="login-hint">등록하면 바로 아래 목록에 표시됩니다</span>
+              <button class="btn-primary" id="commentSubmitBtn">댓글 등록</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="comment-list-header">
+          <span class="comment-count">댓글 3개</span>
+          <select class="sort-select"><option>최신순</option><option>공감순</option></select>
+        </div>
+
+        <div id="commentList">
+          <div class="comment-item">
+            <div class="comment-main">
+              <div class="comment-head"><span class="comment-author">이도현</span><span class="comment-time">3시간 전</span></div>
+              <p class="comment-body">재시도 정책 다음 글도 기대하고 있겠습니다. 저희 팀도 비슷한 고민을 하고 있어요.</p>
+              <div class="comment-actions"><button>👍 12</button><button id="replyToggle">💬 답글 1개</button></div>
+              <div class="comment-replies" id="replyList" style="display:none;">
+                <div class="comment-item">
+                  <div class="comment-main">
+                    <div class="comment-head"><span class="comment-author">박서연</span><span class="comment-time">2시간 전</span></div>
+                    <p class="comment-body">저도 동의합니다. 재시도 단위를 어떻게 나눴는지 궁금해요.</p>
+                    <div class="comment-actions"><button>👍 4</button><button>답글</button></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="comment-item">
+            <div class="comment-main">
+              <div class="comment-head"><span class="comment-author external">익명 (외부 방문자)</span><span class="comment-time">어제</span></div>
+              <p class="comment-body">좋은 글 감사합니다. 도입 전후 지표를 더 자세히 볼 수 있을까요?</p>
+              <div class="comment-actions"><button>👍 5</button><button>답글</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ 하단 북엔드: 구독 밴드 + 푸터 ============ -->
+  <div class="subscribe-band">
+    <h3>새 글 소식을 받아보세요</h3>
+    <p>S-FOOD 기술 블로그의 새 글을 이메일로 받아보실 수 있습니다.</p>
+    <div class="subscribe-form">
+      <input type="email" placeholder="you@s-food.com" />
+      <button class="btn-primary">구독하기</button>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="wordmark-mini">S-FOOD TECH</div>
+          <p>에쓰푸드 IT팀·AX팀이 현장에서 겪은 기술 이야기를 기록하고 나눕니다.</p>
+        </div>
+        <div class="footer-col">
+          <h4>바로가기</h4>
+          <a href="#">전체 글</a>
+          <a href="#">회사 소개</a>
+          <a href="#">채용</a>
+        </div>
+        <div class="footer-col">
+          <h4>연결</h4>
+          <a href="#">RSS 구독</a>
+          <a href="#">sfood.co.kr</a>
+        </div>
+      </div>
+      <div class="footer-bottom">© 2026 S-FOOD. All rights reserved.</div>
+    </div>
+  </footer>
+
+  <!-- ============ 검색 오버레이 ============ -->
+  <div class="search-overlay" id="searchOverlay">
+    <button class="icon-btn search-close" id="searchCloseBtn" aria-label="검색 닫기">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+
+    <div class="search-intro">
+      <span class="kicker">Search</span>
+      <h2 class="search-heading">무엇을 찾고 계신가요?</h2>
+      <div class="search-rule"></div>
+    </div>
+
+    <div class="search-input-row">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7.5"></circle><line x1="21" y1="21" x2="16.2" y2="16.2"></line></svg>
+      <input type="text" id="searchInput" placeholder="키워드, 작성자, 카테고리로 검색해보세요" autocomplete="off" />
+    </div>
+
+    <div class="search-browse">
+      <div class="search-browse-label">카테고리로 둘러보기</div>
+      <div class="pill-row">
+        <button class="pill active">전체 <span class="pill-count">32</span></button>
+        <button class="pill">Backend <span class="pill-count">11</span></button>
+        <button class="pill">Frontend <span class="pill-count">8</span></button>
+        <button class="pill">Infra <span class="pill-count">6</span></button>
+        <button class="pill">AI <span class="pill-count">4</span></button>
+        <button class="pill">Culture <span class="pill-count">3</span></button>
+      </div>
+    </div>
+
+    <div class="search-results" id="searchResults" hidden>
+      <p class="search-results-label">결과 2건</p>
+      <div class="search-result-row">
+        <div style="flex:1;">
+          <span class="kicker" style="margin-bottom:4px;">Backend</span>
+          <h4 class="post-title" style="margin:0 0 4px;">한꺼번에 짊어지던 배치를 하나씩 흘려보내는 워크플로로</h4>
+          <p class="post-excerpt" style="margin:0;">무거운 워크플로 엔진 대신, 우리 팀 사정에 맞는 배치 처리 구조를 소개합니다.</p>
+        </div>
+      </div>
+      <div class="search-result-row">
+        <div style="flex:1;">
+          <span class="kicker" style="margin-bottom:4px;">Frontend</span>
+          <h4 class="post-title" style="margin:0 0 4px;">배포 없이 앱과 로컬 웹을 잇다</h4>
+          <p class="post-excerpt" style="margin:0;">CloudFront 리다이렉트와 WebSocket 터널로 실시간 개발 환경을 구성한 과정을 소개합니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const overlay = document.getElementById('searchOverlay');
+    document.getElementById('searchOpenBtn').addEventListener('click', () => {
+      overlay.classList.add('open');
+      document.getElementById('searchInput').focus();
+    });
+    document.getElementById('searchCloseBtn').addEventListener('click', () => overlay.classList.remove('open'));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') overlay.classList.remove('open'); });
+
+    const searchResults = document.getElementById('searchResults');
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      searchResults.hidden = e.target.value.trim().length === 0;
+    });
+
+    // ============ 댓글 작성 과정: 화면 자체가 단계별로 전환된다 ============
+    // ① 게이트(댓글창 없음, 방식 선택만) → ② 확인(고른 방식의 패널만 노출) → ③ 작성(확인 후에만 노출)
+    (() => {
+      const gate = document.getElementById('commentGate');
+      const msPanel = document.getElementById('identifyMsPanel');
+      const guestPanel = document.getElementById('identifyGuestPanel');
+      const composer = document.getElementById('commentComposer');
+      const identityBar = document.getElementById('identityConfirmed');
+      const bodyField = document.getElementById('commentBody');
+      const commentList = document.getElementById('commentList');
+      const countEl = document.querySelector('.comment-count');
+
+      let identity = null; // { name, email, verified }
+
+      function showOnly(target) {
+        [gate, msPanel, guestPanel, composer].forEach((el) => { el.hidden = el !== target; });
+      }
+
+      function incrementCount() {
+        const match = countEl.textContent.match(/\d+/);
+        countEl.textContent = `댓글 ${(match ? Number(match[0]) : 0) + 1}개`;
+      }
+
+      function backToGate() {
+        identity = null;
+        guestPanel.querySelector('#guestNameInput').value = '';
+        guestPanel.querySelector('#guestEmailInput').value = '';
+        showOnly(gate);
+      }
+
+      function openComposer() {
+        identityBar.innerHTML = `
+          <span class="who">${identity.name}</span>
+          <span class="how">${identity.verified ? '· 사내 인증됨' : '· 외부 방문자'}</span>
+          <button class="switch-btn" id="switchIdentityBtn">다른 사용자로</button>`;
+        identityBar.querySelector('#switchIdentityBtn').addEventListener('click', backToGate);
+        showOnly(composer);
+        bodyField.focus();
+      }
+
+      // 게이트: 방식을 고르기 전까지 그 아래 아무것도 보이지 않는다
+      document.getElementById('gateMsBtn').addEventListener('click', () => {
+        showOnly(msPanel);
+        // 실제로는 AX Auth(마이크로소프트 로그인)로 페이지를 떠났다가 돌아오는 리다이렉트 왕복이다.
+        msPanel.innerHTML = `<div class="identify-loading"><span class="spinner"></span> AX Auth로 이동 중… (마이크로소프트 로그인 후 이 화면으로 돌아옵니다)</div>`;
+        setTimeout(() => {
+          msPanel.innerHTML = `
+            <div class="panel-label">사내 인증 완료</div>
+            <div class="identify-fields">
+              <input class="identity-field" id="msNameInput" type="text" placeholder="이름" value="이동현" />
+              <span class="identity-verified-tag">✓ dhlee@sfood.com 인증됨</span>
+            </div>
+            <div class="composer-footer" style="border-top:none; padding-top:0; margin-top:0;">
+              <span class="login-hint">이름은 필요하면 고쳐서 등록할 수 있습니다</span>
+              <span style="display:flex; gap:8px;">
+                <button class="btn-secondary-sm" id="msCancelBtn">취소</button>
+                <button class="btn-primary" id="msConfirmBtn">확인하고 댓글 작성</button>
+              </span>
+            </div>`;
+          msPanel.querySelector('#msCancelBtn').addEventListener('click', backToGate);
+          msPanel.querySelector('#msConfirmBtn').addEventListener('click', () => {
+            const name = msPanel.querySelector('#msNameInput').value.trim() || '이동현';
+            identity = { name, email: 'dhlee@sfood.com', verified: true };
+            openComposer();
+          });
+        }, 900);
+      });
+
+      document.getElementById('gateGuestBtn').addEventListener('click', () => showOnly(guestPanel));
+      document.getElementById('guestCancelBtn').addEventListener('click', backToGate);
+      document.getElementById('guestConfirmBtn').addEventListener('click', () => {
+        const name = document.getElementById('guestNameInput').value.trim();
+        const email = document.getElementById('guestEmailInput').value.trim();
+        const hint = document.getElementById('guestHint');
+        if (!name || !email) {
+          hint.textContent = '이름과 이메일을 모두 입력해주세요';
+          hint.style.color = 'var(--brand-red)';
+          return;
+        }
+        identity = { name, email, verified: false };
+        openComposer();
+      });
+
+      // 작성: 확인이 끝난 뒤에만 도달할 수 있는 단계
+      document.getElementById('commentSubmitBtn').addEventListener('click', () => {
+        const body = bodyField.value.trim();
+        if (!body) { bodyField.focus(); return; }
+
+        const item = document.createElement('div');
+        item.className = 'comment-item comment-item-new';
+        item.innerHTML = `
+          <div class="comment-main">
+            <div class="comment-head">
+              <span class="comment-author${identity.verified ? '' : ' external'}">${identity.name}${identity.verified ? '' : ' (외부 방문자)'}</span>
+              <span class="comment-time">방금 전</span>
+            </div>
+            <p class="comment-body"></p>
+            <div class="comment-actions"><button>👍 0</button><button>답글</button></div>
+          </div>`;
+        item.querySelector('.comment-body').textContent = body;
+        commentList.prepend(item);
+        incrementCount();
+        bodyField.value = '';
+      });
+    })();
+
+    const replyToggle = document.getElementById('replyToggle');
+    const replyList = document.getElementById('replyList');
+    replyToggle.addEventListener('click', () => {
+      const isOpen = replyList.style.display !== 'none';
+      replyList.style.display = isOpen ? 'none' : 'flex';
+      replyToggle.textContent = isOpen ? '💬 답글 1개' : '💬 답글 접기';
+    });
+
+    const seriesToggle = document.getElementById('seriesToggle');
+    const seriesList = document.getElementById('seriesList');
+    seriesToggle.addEventListener('click', () => {
+      const isOpen = seriesList.style.display !== 'none';
+      seriesList.style.display = isOpen ? 'none' : 'flex';
+      seriesToggle.classList.toggle('open', !isOpen);
+    });
+
+    const masthead = document.getElementById('masthead');
+    const slimHeader = document.getElementById('slimHeader');
+    const tabs = document.querySelectorAll('.screen-tab');
+    const screens = document.querySelectorAll('.screen');
+
+    function showScreen(name) {
+      tabs.forEach((t) => t.classList.toggle('active', t.dataset.screen === name));
+      screens.forEach((s) => s.classList.toggle('active', s.id === `screen-${name}`));
+      masthead.style.display = name === 'home' ? 'block' : 'none';
+      slimHeader.style.display = name === 'detail' ? 'flex' : 'none';
+      window.scrollTo(0, 0);
+    }
+
+    tabs.forEach((tab) => tab.addEventListener('click', () => showScreen(tab.dataset.screen)));
+    document.querySelector('[data-goto-detail]').addEventListener('click', () => showScreen('detail'));
+    document.querySelector('.back-link').addEventListener('click', () => showScreen('home'));
+  </script>
+
+</body>
+</html>

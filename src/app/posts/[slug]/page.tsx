@@ -3,10 +3,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPublishedPostBySlug, PublishedPostDetail } from "@/lib/viewer/posts";
 import { NotFoundError } from "@/lib/errors";
-import { RELATED_SITES } from "@/lib/viewer/related-sites";
 import { auth } from "@/lib/auth";
 import { getAxAuthLoginUrl } from "@/lib/ax-auth/client";
 import { CommentSection } from "@/components/comments/CommentSection";
+import { SiteHeader } from "@/components/layout/SiteHeader";
+import { SiteFooter } from "@/components/layout/SiteFooter";
 
 interface PostPageProps {
   params: Promise<{ slug: string }>;
@@ -59,11 +60,13 @@ export default async function PostPage({ params }: PostPageProps) {
 
   if (post === "error") {
     return (
-      <main className="page">
-        <p className="error-text">
+      <div className="wrap">
+        <SiteHeader variant="detail" />
+        <p className="error-text" style={{ margin: "24px 0" }}>
           문서를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.
         </p>
-      </main>
+        <SiteFooter />
+      </div>
     );
   }
 
@@ -76,8 +79,8 @@ export default async function PostPage({ params }: PostPageProps) {
     mainEntityOfPage: post.canonicalUrl,
   };
 
-  const visibleRelatedSites = RELATED_SITES.filter((site) => site.url);
   const session = await auth();
+  const sessionEmail = session?.user?.email ?? null;
 
   let loginUrl: string | null = null;
   try {
@@ -87,61 +90,62 @@ export default async function PostPage({ params }: PostPageProps) {
   }
 
   return (
-    <main className="page">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+    <>
+      <div className="wrap">
+        <SiteHeader variant="detail" />
 
-      <article>
-        <h1 className="page-title">{post.title}</h1>
-        {post.publishedAt && (
-          <p className="page-subtitle">
-            {new Date(post.publishedAt).toLocaleDateString("ko-KR")}
-          </p>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+
+        <article>
+          <header className="article-header">
+            <h1 className="article-title">{post.title}</h1>
+            <div className="byline">
+              <div className="byline-sub">
+                {post.publishedAt && new Date(post.publishedAt).toLocaleDateString("ko-KR")}
+                {post.publishedAt && " · "}
+                읽는 데 {post.readingMinutes}분
+              </div>
+            </div>
+          </header>
+
+          {post.heroImageUrl && (
+            <div className="article-hero">
+              {/* eslint-disable-next-line @next/next/no-img-element -- Confluence 첨부 이미지를 그대로 노출 */}
+              <img src={post.heroImageUrl} alt="" />
+            </div>
+          )}
+
+          <div
+            className="article-body viewer-content"
+            dangerouslySetInnerHTML={{ __html: post.html }}
+          />
+        </article>
+
+        {post.relatedPosts.length > 0 && (
+          <section className="related-section">
+            <h2 className="section-heading">관련 글</h2>
+            <div className="related-list">
+              {post.relatedPosts.map((related) => (
+                <Link key={related.slug} href={`/posts/${related.slug}`} className="related-card">
+                  <div className="related-title">{related.title}</div>
+                </Link>
+              ))}
+            </div>
+          </section>
         )}
 
-        <div
-          className="viewer-content"
-          dangerouslySetInnerHTML={{ __html: post.html }}
+        <CommentSection
+          pageId={post.pageId}
+          isLoggedIn={Boolean(session?.user)}
+          sessionEmail={sessionEmail}
+          loginUrl={loginUrl}
         />
-      </article>
+      </div>
 
-      {post.relatedPosts.length > 0 && (
-        <section className="card">
-          <h2>관련 글</h2>
-          <ul className="doc-list">
-            {post.relatedPosts.map((related) => (
-              <li key={related.slug}>
-                <Link href={`/posts/${related.slug}`} className="doc-list-item">
-                  <span className="doc-list-item-title">{related.title}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {visibleRelatedSites.length > 0 && (
-        <section className="card">
-          <h2>연관 사이트</h2>
-          <ul className="doc-list">
-            {visibleRelatedSites.map((site) => (
-              <li key={site.name}>
-                <a href={site.url} className="doc-list-item">
-                  {site.name}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <CommentSection
-        pageId={post.pageId}
-        isLoggedIn={Boolean(session?.user)}
-        loginUrl={loginUrl}
-      />
-    </main>
+      <SiteFooter />
+    </>
   );
 }
