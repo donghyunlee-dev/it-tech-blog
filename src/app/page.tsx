@@ -7,6 +7,11 @@ import { PostCard } from "@/components/posts/PostCard";
 import { RecentCommentsSidebar } from "@/components/posts/RecentCommentsSidebar";
 
 const RECENT_COMMENTS_LIMIT = 4;
+// 게시 문서 수가 늘어나도 홈 로드 시 댓글 조회 API 호출 횟수가 무한정 늘지 않도록, 최신순으로
+// 정렬된 목록에서 최근 N개 문서만 훑는다(전체를 훑던 이전 구조의 확장성 문제 — 열린 과제 참고).
+// 표시 개수(4)보다 넉넉히 잡아, 가장 최근 게시물 몇 개가 우연히 댓글이 없어도 사이드바가
+// 비어 보이지 않게 한다.
+const RECENT_COMMENTS_SCAN_LIMIT = 10;
 
 // Confluence를 매 요청마다 직접 조회하지 않도록 짧은 주기로 재검증한다(ISR).
 export const revalidate = 60;
@@ -23,7 +28,10 @@ export default async function Home() {
 
   let recentComments: Awaited<ReturnType<typeof listRecentComments>> = [];
   try {
-    recentComments = await listRecentComments(posts, RECENT_COMMENTS_LIMIT);
+    recentComments = await listRecentComments(
+      posts.slice(0, RECENT_COMMENTS_SCAN_LIMIT),
+      RECENT_COMMENTS_LIMIT
+    );
   } catch {
     recentComments = [];
   }
