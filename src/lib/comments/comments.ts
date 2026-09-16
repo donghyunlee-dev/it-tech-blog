@@ -102,12 +102,16 @@ function truncateQuote(body: string): string {
 }
 
 /**
- * 전체 게시글에 걸친 댓글을 모아 최신순으로 상위 N개만 반환한다(홈 사이드바 "최근 댓글"용).
- * Confluence API는 스페이스 전체를 가로지르는 댓글 조회를 제공하지 않아, 게시 문서마다 개별
- * 조회한 뒤 메모리에서 합쳐 정렬한다("소규모 팀" 규모를 전제 — architecture.md 참고).
+ * 전달받은 게시 문서 각각에 걸친 댓글을 모아 최신순으로 상위 N개만 반환한다(홈 사이드바
+ * "최근 댓글"용). Confluence API는 스페이스 전체를 가로지르는 댓글 조회를 제공하지 않아,
+ * 게시 문서마다 개별 조회한 뒤 메모리에서 합쳐 정렬한다("소규모 팀" 규모를 전제 —
+ * architecture.md 참고).
  * 계층(답글 관계)은 다루지 않고 평면적으로 최신순만 본다 — "지금 오가는 이야기"를 보여주는
  * 목적이라 답글/최상위를 구분할 필요가 없다.
- * `posts`는 호출부가 이미 조회해 둔 게시 문서 목록을 그대로 받는다(중복 조회 방지).
+ * `posts`는 호출부가 이미 조회해 둔 게시 문서 목록을 그대로 받는다(중복 조회 방지). 이 함수는
+ * 받은 `posts` 전부에 대해 댓글을 조회하므로, 게시 문서가 많아질 때 API 호출 수를 제한하려면
+ * 호출부가 최신순 상위 몇 건만 잘라서 넘겨야 한다(`src/app/page.tsx`의
+ * `RECENT_COMMENTS_SCAN_LIMIT` 참고).
  */
 export async function listRecentComments(
   posts: PublishedPostSummary[],
