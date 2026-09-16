@@ -76,7 +76,7 @@ Content-Type: application/json
 ```json
 {
   "posts": [
-    { "slug": "공개 경로", "title": "문서 제목", "publishedAt": "게시 일시" }
+    { "slug": "공개 경로", "title": "문서 제목", "publishedAt": "게시 일시", "metaDescription": "검색·공유용 설명(검색 오버레이 카드 요약에도 사용)" }
   ]
 }
 ```

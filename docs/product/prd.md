@@ -165,6 +165,7 @@ Editor는 Phase E1(기반 설정) → E2(핵심 기능) → E3(운영 자동화)
 **Phase V2 — 핵심 기능**
 - 목표: 게시된 문서를 공개 열람하고 검색엔진에 노출할 수 있게 한다. 디자인·문서 표현 완성도를 핵심 목표로 한다.
 - 포함 기능: 게시 문서 목록 조회, 게시 문서 상세 조회·렌더링, Confluence 컴포넌트 컨버터, SEO 기본 대응, sitemap.xml·robots.txt·RSS 제공, 구조화 데이터·관련 글·연관 사이트 링크
+- 진행 상태(2026-09-16): "에디토리얼 매거진형" 디자인 방향을 확정([docs/guide/design-direction.md](../guide/design-direction.md))하고 홈/상세/댓글/검색 화면에 실제로 반영했다. 사내 디자인 시스템 `@sfood/ui`를 전면 도입(React 18.3.1 다운그레이드, Tailwind 도입 — [docs/guide/design-system-adoption.md](../guide/design-system-adoption.md) 참고)했다. 실 Confluence 데이터로 검증하는 과정에서 Editor가 실제로 쓰는 `publishMetadata`/제목 저장 구조가 이 문서·`data-spec.md`의 기존 설계와 달라 게시 문서가 전혀 노출되지 않던 버그를 발견해 수정했다([docs/tasks/viewer-publish-metadata-fix/](../tasks/viewer-publish-metadata-fix/) 참고) — 현재는 실제 게시 문서가 목록·상세·댓글까지 정상 노출된다. Confluence 컴포넌트 컨버터는 매크로(코드/정보 패널/표) 변환은 되어 있으나 카테고리·태그(Confluence 네이티브 페이지 레이블) 노출은 아직 미구현.
 
 **Phase V3 — Comment 기능**
 - 목표: 댓글 작성 시에만 AX 로그인을 사용해, MS 로그인 사용자와 외부 사용자 모두 댓글을 작성하고 계층 구조로 열람할 수 있게 한다.
