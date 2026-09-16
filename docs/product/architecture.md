@@ -68,7 +68,8 @@ Next.js(React, TypeScript) 기반 독립 애플리케이션으로, 자체 DB 없
 
 | 영역 | 제안 | 선정 이유 |
 |---|---|---|
-| 프론트엔드/백엔드 | Next.js(React, TypeScript), Route Handlers | SEO를 위한 서버 렌더링(SSR/ISR)에 적합, 디자인·문서 표현에 집중 |
+| 프론트엔드/백엔드 | Next.js(React 18.3.1, TypeScript), Route Handlers | SEO를 위한 서버 렌더링(SSR/ISR)에 적합, 디자인·문서 표현에 집중. React는 사내 디자인 시스템 `@sfood/ui`의 peer dependency(`^18.0.0`)에 맞춰 19에서 18로 낮췄다(2026-09-15) |
+| UI 컴포넌트/스타일 | `@sfood/ui`(사내 디자인 시스템, Tailwind CSS v3 기반) + 자체 CSS | 댓글·검색 등 일부 화면과 브랜드 컬러·폰트 토큰은 `@sfood/ui`를 사용하고, 에디토리얼 매거진 전용 레이아웃(마스트헤드·히어로·시리즈 위젯 등)은 대응 컴포넌트가 없어 자체 CSS로 구현한다 — 상세는 [design-system-adoption.md](../guide/design-system-adoption.md) 참고 |
 | 데이터 저장 | 없음(Confluence API를 읽기 전용으로 조회) | 게시된 문서만 읽어 노출. Viewer의 반복 조회 성능을 위해 Next.js ISR/엣지 캐시로 Confluence 응답을 짧은 주기로 캐싱 |
 | 인증 | AX Auth 경유 + Auth.js(NextAuth) — **댓글 작성 시에만 사용** | Viewer 열람 자체는 비로그인. Comment 작성 흐름 안에서만 AX Auth 로그인을 트리거하고, 그 결과로 댓글 작성자를 식별한다 |
 | Confluence 연동 | Confluence Cloud REST API v2, 서비스 계정 API 토큰(Editor와 동일 계정) | 문서·게시 메타데이터는 읽기 전용, 댓글(Comment)만 쓰기 |
