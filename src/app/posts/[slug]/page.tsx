@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { getPublishedPostBySlug, PublishedPostDetail } from "@/lib/viewer/posts";
-import { NotFoundError } from "@/lib/errors";
+import { notFound, permanentRedirect } from "next/navigation";
+import { resolvePostRoute, PostRouteResult } from "@/lib/viewer/posts";
 import { auth } from "@/lib/auth";
 import { getAxAuthLoginUrl } from "@/lib/ax-auth/client";
 import { CommentSection } from "@/components/comments/CommentSection";
@@ -16,14 +15,13 @@ interface PostPageProps {
 // Confluence를 매 요청마다 직접 조회하지 않도록 짧은 주기로 재검증한다(ISR).
 export const revalidate = 60;
 
-async function loadPost(slug: string): Promise<PublishedPostDetail | "not-found" | "error"> {
+type LoadedPost = PostRouteResult | { status: "error" };
+
+async function loadPost(slug: string): Promise<LoadedPost> {
   try {
-    return await getPublishedPostBySlug(slug);
-  } catch (error) {
-    if (error instanceof NotFoundError) {
-      return "not-found";
-    }
-    return "error";
+    return await resolvePostRoute(slug);
+  } catch {
+    return { status: "error" };
   }
 }
 
@@ -31,11 +29,12 @@ export async function generateMetadata({
   params,
 }: PostPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const post = await loadPost(slug);
+  const result = await loadPost(slug);
 
-  if (post === "not-found" || post === "error") {
+  if (result.status !== "found") {
     return { title: "SFOOD IT Tech Blog" };
   }
+  const post = result.post;
 
   return {
     title: post.title,
@@ -52,13 +51,18 @@ export async function generateMetadata({
 
 export default async function PostPage({ params }: PostPageProps) {
   const { slug } = await params;
-  const post = await loadPost(slug);
+  const result = await loadPost(slug);
 
-  if (post === "not-found") {
+  // 게시 주소(slug)만 바뀐 문서 — 검색엔진·기존 링크가 링크 가치를 유지하도록 영구 리다이렉트한다.
+  if (result.status === "moved") {
+    permanentRedirect(`/posts/${result.currentSlug}`);
+  }
+
+  if (result.status === "not-found") {
     notFound();
   }
 
-  if (post === "error") {
+  if (result.status === "error") {
     return (
       <div className="wrap">
         <SiteHeader variant="detail" />
@@ -69,6 +73,8 @@ export default async function PostPage({ params }: PostPageProps) {
       </div>
     );
   }
+
+  const post = result.post;
 
   const jsonLd = {
     "@context": "https://schema.org",

@@ -175,6 +175,7 @@ Editor는 Phase E1(기반 설정) → E2(핵심 기능) → E3(운영 자동화)
 **Phase V4 — 운영 자동화**
 - 목표: 운영 이상 감지 체계를 갖추고, 리다이렉트·악용 방지를 마무리하고, Viewer를 통합 검증하여 안정적으로 배포한다.
 - 포함 기능: 이상 감지 → Slack 알림(Viewer), 게시 주소 변경/삭제 시 리다이렉트 처리, 외부 댓글 작성 엔드포인트 rate limiting 적용, 통합 QA
+- 진행 상태(2026-09-16): 이상 감지 → Slack 알림은 `toErrorResponse`(Confluence 연동 실패 공통 처리 경로)에 이미 구현되어 있었음을 확인했다. 외부 사용자 댓글 작성 rate limiting을 추가했다([docs/tasks/viewer-comment-rate-limit/](../tasks/viewer-comment-rate-limit/) 참고). 게시 주소 변경 시 308 리다이렉트, 삭제/게시 해제 시 안내 화면도 추가했다([docs/tasks/viewer-post-redirect/](../tasks/viewer-post-redirect/) 참고). 통합 QA는 아직 남은 과제다.
 
 ## ✅ 이관(마이그레이션) 이력 및 남은 과제
 

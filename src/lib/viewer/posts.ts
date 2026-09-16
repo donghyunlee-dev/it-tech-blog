@@ -123,17 +123,23 @@ export async function listPublishedPosts(): Promise<PublishedPostSummary[]> {
   }));
 }
 
-/** slug(publicSlug)로 게시된 문서 상세를 조회한다. 게시되지 않았거나 존재하지 않으면 NotFoundError. */
-export async function getPublishedPostBySlug(
+/** 마지막 `-` 뒤 36자가 UUID 형식이면 그 값을 반환한다(publicSlug의 불변 접미사 — data-spec.md 참고). */
+function extractTrailingUuid(slug: string): string | null {
+  const UUID_LENGTH = 36;
+  const separatorIndex = slug.length - UUID_LENGTH - 1;
+  if (separatorIndex < 0 || slug[separatorIndex] !== "-") return null;
+
+  const candidate = slug.slice(separatorIndex + 1);
+  const isUuid =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(candidate);
+  return isUuid ? candidate : null;
+}
+
+async function buildPostDetail(
+  entries: PublishedEntry[],
+  matchIndex: number,
   slug: string
 ): Promise<PublishedPostDetail> {
-  const entries = await listPublishedEntries();
-  const matchIndex = entries.findIndex((entry) => entry.viewerMeta.publicSlug === slug);
-
-  if (matchIndex === -1) {
-    throw new NotFoundError("게시된 문서를 찾을 수 없습니다.");
-  }
-
   const { page, viewerMeta, publishedAt, title, tags } = entries[matchIndex];
   const fullPage = await getPage(page.id);
   const html = convertStorageToHtml(fullPage.body?.storage.value ?? "");
@@ -156,4 +162,49 @@ export async function getPublishedPostBySlug(
     heroImageUrl: extractFirstImageSrc(html),
     relatedPosts,
   };
+}
+
+/** slug(publicSlug)로 게시된 문서 상세를 조회한다. 게시되지 않았거나 존재하지 않으면 NotFoundError. */
+export async function getPublishedPostBySlug(
+  slug: string
+): Promise<PublishedPostDetail> {
+  const entries = await listPublishedEntries();
+  const matchIndex = entries.findIndex((entry) => entry.viewerMeta.publicSlug === slug);
+
+  if (matchIndex === -1) {
+    throw new NotFoundError("게시된 문서를 찾을 수 없습니다.");
+  }
+
+  return buildPostDetail(entries, matchIndex, slug);
+}
+
+export type PostRouteResult =
+  | { status: "found"; post: PublishedPostDetail }
+  | { status: "moved"; currentSlug: string }
+  | { status: "not-found" };
+
+/**
+ * 게시 문서 상세 페이지(`/posts/[slug]`) 전용 조회. 정확히 일치하는 slug가 없으면, Editor가
+ * publicSlug 접미사로 항상 붙이는 페이지 고유 UUID(작성자가 slug를 바꿔도 변하지 않음 —
+ * data-spec.md 참고)로 역조회해 "주소만 바뀐 문서"인지 "실제로 없는 문서"인지 구분한다.
+ * 바뀐 문서면 현재 slug로 리다이렉트할 수 있도록 `moved`를 반환하고, 그마저 없으면(삭제·게시
+ * 해제·애초에 잘못된 주소) `not-found`를 반환한다.
+ */
+export async function resolvePostRoute(slug: string): Promise<PostRouteResult> {
+  const entries = await listPublishedEntries();
+  const matchIndex = entries.findIndex((entry) => entry.viewerMeta.publicSlug === slug);
+
+  if (matchIndex !== -1) {
+    return { status: "found", post: await buildPostDetail(entries, matchIndex, slug) };
+  }
+
+  const uuid = extractTrailingUuid(slug);
+  if (uuid) {
+    const renamed = entries.find((entry) => entry.page.title === uuid);
+    if (renamed) {
+      return { status: "moved", currentSlug: renamed.viewerMeta.publicSlug };
+    }
+  }
+
+  return { status: "not-found" };
 }
