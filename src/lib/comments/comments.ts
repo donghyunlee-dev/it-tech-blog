@@ -6,12 +6,13 @@ import {
   listFooterComments,
 } from "@/lib/confluence/client";
 import type { PublishMetadata } from "@/lib/viewer/publish-metadata";
-import { VIEWER_ID, type SourceDocument } from "@/lib/viewer/posts";
+import { VIEWER_ID, type PublishedPostSummary, type SourceDocument } from "@/lib/viewer/posts";
 import { NotFoundError, ValidationError } from "@/lib/errors";
 import { getSiteBaseUrl } from "@/lib/site";
 import { formatStructuredBody, parseStructuredBody } from "./structured-body";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const RECENT_COMMENT_QUOTE_MAX_LENGTH = 60;
 
 export interface CommentNode {
   commentId: string;
@@ -82,6 +83,64 @@ export async function listComments(pageId: string): Promise<CommentNode[]> {
   }
 
   return buildTree(null);
+}
+
+export interface RecentComment {
+  commentId: string;
+  authorName: string;
+  /** 사이드바에 맞게 짧게 자른 댓글 본문. */
+  quote: string;
+  createdAt: string;
+  postSlug: string;
+  postTitle: string;
+}
+
+function truncateQuote(body: string): string {
+  const singleLine = body.replace(/\s+/g, " ").trim();
+  if (singleLine.length <= RECENT_COMMENT_QUOTE_MAX_LENGTH) return singleLine;
+  return `${singleLine.slice(0, RECENT_COMMENT_QUOTE_MAX_LENGTH)}…`;
+}
+
+/**
+ * 전체 게시글에 걸친 댓글을 모아 최신순으로 상위 N개만 반환한다(홈 사이드바 "최근 댓글"용).
+ * Confluence API는 스페이스 전체를 가로지르는 댓글 조회를 제공하지 않아, 게시 문서마다 개별
+ * 조회한 뒤 메모리에서 합쳐 정렬한다("소규모 팀" 규모를 전제 — architecture.md 참고).
+ * 계층(답글 관계)은 다루지 않고 평면적으로 최신순만 본다 — "지금 오가는 이야기"를 보여주는
+ * 목적이라 답글/최상위를 구분할 필요가 없다.
+ * `posts`는 호출부가 이미 조회해 둔 게시 문서 목록을 그대로 받는다(중복 조회 방지).
+ */
+export async function listRecentComments(
+  posts: PublishedPostSummary[],
+  limit: number
+): Promise<RecentComment[]> {
+  const perPost = await Promise.all(
+    posts.map(async (post): Promise<RecentComment[]> => {
+      try {
+        const rawComments = await listFooterComments(post.pageId);
+        return rawComments.flatMap((comment) => {
+          const parsed = parseStructuredBody(comment.body?.storage.value ?? "");
+          if (!parsed) return [];
+          return [
+            {
+              commentId: comment.id,
+              authorName: parsed.authorName,
+              quote: truncateQuote(parsed.body),
+              createdAt: comment.createdAt,
+              postSlug: post.slug,
+              postTitle: post.title,
+            },
+          ];
+        });
+      } catch {
+        return [];
+      }
+    })
+  );
+
+  return perPost
+    .flat()
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, limit);
 }
 
 export interface CreateCommentInput {
