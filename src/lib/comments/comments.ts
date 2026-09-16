@@ -10,6 +10,7 @@ import { VIEWER_ID, type PublishedPostSummary, type SourceDocument } from "@/lib
 import { NotFoundError, ValidationError } from "@/lib/errors";
 import { getSiteBaseUrl } from "@/lib/site";
 import { formatStructuredBody, parseStructuredBody } from "./structured-body";
+import { notifyIgnoredNativeComment } from "./ignored-comments";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const RECENT_COMMENT_QUOTE_MAX_LENGTH = 60;
@@ -43,6 +44,7 @@ export async function listComments(pageId: string): Promise<CommentNode[]> {
     const parsed = parseStructuredBody(comment.body?.storage.value ?? "");
     if (!parsed) {
       console.error(`[comments] 구조화 형식이 아닌 댓글을 건너뜁니다: ${comment.id}`);
+      await notifyIgnoredNativeComment(pageId, comment.id);
       continue;
     }
     records.push({
@@ -121,20 +123,23 @@ export async function listRecentComments(
     posts.map(async (post): Promise<RecentComment[]> => {
       try {
         const rawComments = await listFooterComments(post.pageId);
-        return rawComments.flatMap((comment) => {
+        const results: RecentComment[] = [];
+        for (const comment of rawComments) {
           const parsed = parseStructuredBody(comment.body?.storage.value ?? "");
-          if (!parsed) return [];
-          return [
-            {
-              commentId: comment.id,
-              authorName: parsed.authorName,
-              quote: truncateQuote(parsed.body),
-              createdAt: comment.createdAt,
-              postSlug: post.slug,
-              postTitle: post.title,
-            },
-          ];
-        });
+          if (!parsed) {
+            await notifyIgnoredNativeComment(post.pageId, comment.id);
+            continue;
+          }
+          results.push({
+            commentId: comment.id,
+            authorName: parsed.authorName,
+            quote: truncateQuote(parsed.body),
+            createdAt: comment.createdAt,
+            postSlug: post.slug,
+            postTitle: post.title,
+          });
+        }
+        return results;
       } catch {
         return [];
       }
