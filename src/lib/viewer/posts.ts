@@ -132,7 +132,10 @@ function extractTrailingUuid(slug: string): string | null {
   const candidate = slug.slice(separatorIndex + 1);
   const isUuid =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(candidate);
-  return isUuid ? candidate : null;
+  // 페이지 title(page.title)은 항상 소문자 randomUUID() 값이므로(data-spec.md), 대소문자가
+  // 섞인 옛 주소도 매칭되도록 반환 전에 정규화한다 — 위 정규식이 대소문자를 가리지 않고
+  // "UUID 형태"로 인정한 값을 그대로 돌려주면 호출부의 `===` 비교가 깨진다.
+  return isUuid ? candidate.toLowerCase() : null;
 }
 
 async function buildPostDetail(
