@@ -177,6 +177,17 @@ Editor는 Phase E1(기반 설정) → E2(핵심 기능) → E3(운영 자동화)
 - 포함 기능: 이상 감지 → Slack 알림(Viewer), 게시 주소 변경/삭제 시 리다이렉트 처리, 외부 댓글 작성 엔드포인트 rate limiting 적용, 통합 QA
 - 진행 상태(2026-09-16): 이상 감지 → Slack 알림은 `toErrorResponse`(Confluence 연동 실패 공통 처리 경로)에 이미 구현되어 있었음을 확인했다. 외부 사용자 댓글 작성 rate limiting을 추가했다([docs/tasks/viewer-comment-rate-limit/](../tasks/viewer-comment-rate-limit/) 참고). 게시 주소 변경 시 308 리다이렉트, 삭제/게시 해제 시 안내 화면도 추가했다([docs/tasks/viewer-post-redirect/](../tasks/viewer-post-redirect/) 참고). 통합 QA를 완료해 Phase V4의 모든 항목을 마무리했다 — 실 게시 데이터로 홈/상세/SEO 엔드포인트/리다이렉트/rate limiting/댓글 흐름을 함께 점검했고 회귀는 발견되지 않았다([docs/tasks/phase-v4-integration-qa/](../tasks/phase-v4-integration-qa/) 참고). **Phase V4 완료.**
 
+## 🛡️ 코드 품질 자체 점검 (2026-09-17)
+
+Phase V4까지 병합된 변경분(#7~#13) 전체 diff를 대상으로 자체 코드 리뷰를 진행해 6건을 확인했다(4건 correctness, 2건 경미한 품질 이슈 — 모두 독립 검증 완료, 아래는 심각도순). 항목별로 순차적으로 브랜치를 만들어 수정·PR 진행 예정.
+
+- [ ] **[높음] 외부 댓글 rate limiting이 사실상 무력화됨** — `getClientIp()`가 클라이언트가 조작 가능한 `X-Forwarded-For`의 첫 값을 그대로 신뢰해, 공격자가 매 요청마다 가짜 IP를 바꿔 보내면 429 제한을 우회할 수 있다(`src/app/api/comments/route.ts`).
+- [ ] **[중간] 댓글 알림 메일 콜백의 광범위한 catch가 실패 원인을 왜곡** — `completePendingComment`가 인증 이후의 모든 실패(검증 오류, 부모 댓글 삭제, Confluence 장애, 메일 발송 실패 등)를 전부 "인증 실패로 저장 안 됨"으로 안내해, 실제로는 저장된 댓글도 사용자가 재입력·중복 작성할 수 있다(`src/app/api/auth/ax-callback/route.ts`).
+- [ ] **[중간] 탭 간 `ax_pending_comment` 쿠키 충돌** — 같은 브라우저의 다른 탭에서 AX Auth 로그인 라운드트립이 겹치면, 한 탭의 대기 중인 댓글 초안이 다른 탭의 로그인 시도에 잘못 소비될 수 있다(`src/app/api/auth/ax-callback/route.ts`, `src/components/comments/CommentSection.tsx`).
+- [ ] **[낮음] 게시 주소 리다이렉트의 UUID 비교가 대소문자를 구분** — 정규식은 대소문자 무관으로 형태만 검사하고 실제 비교는 대소문자를 구분해, 대문자가 섞인 옛 주소는 리다이렉트 대신 not-found로 빠진다(`src/lib/viewer/posts.ts`).
+- [ ] **[사소] `resolveAuthErrorMessage(error)` 중복 계산** — 같은 순수 함수를 렌더링당 두 번 호출한다(`src/app/posts/[slug]/page.tsx`).
+- [ ] **[사소] 대기 중인 댓글 초안 타입이 클라이언트/서버에 중복 선언됨** — `PendingCommentDraft`/`PendingComment`가 동일한 모양을 각자 파일에 독립적으로 선언하고 있어 한쪽만 바뀌면 컴파일 타임에 걸러지지 않는다(`src/components/comments/CommentSection.tsx`, `src/app/api/auth/ax-callback/route.ts`).
+
 ## ✅ 이관(마이그레이션) 이력 및 남은 과제
 
 2026-08-19~20에 Editor 코드를 별도 저장소(`C:\Users\USER\projects\sfood-it-editor`)로 이관하고, 이 저장소는 Viewer(Tech Blog) 전용으로 정리했다(양쪽 모두 lint/build 통과 확인). 이관 대상 파일별 상세 체크리스트와 이관 과정에서 발견한 숨은 의존성(에러 클래스, PublishMetadata 타입 등 Viewer 쪽 독립 재정의)은 [phase-migration-editor-separation/result.md](../tasks/phase-migration-editor-separation/result.md)에 기록되어 있다. 이관 자체는 완료되었으므로 이 문서에서는 남은 과제만 추적한다.
