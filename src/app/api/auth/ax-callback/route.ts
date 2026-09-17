@@ -72,35 +72,48 @@ async function completePendingComment(
 
   if (!verifyResult.valid || !verifyResult.email) {
     const response = NextResponse.redirect(
-      new URL(appendError(returnTo, "comment_failed"), request.url)
+      new URL(appendError(returnTo, "comment_auth_failed"), request.url)
     );
     response.cookies.delete(PENDING_COMMENT_COOKIE);
     return response;
   }
 
   let redirectPath = returnTo;
+  let created: Awaited<ReturnType<typeof createComment>> | null = null;
   try {
-    const result = await createComment({
+    created = await createComment({
       pageId: pending.pageId,
       parentCommentId: pending.parentCommentId,
       body: pending.body,
       session: { email: verifyResult.email },
       authorName: pending.authorName,
     });
-
-    const documentMeta = await getDocumentNotificationMeta(pending.pageId);
-    if (documentMeta) {
-      await notifyCommentAdded({
-        loginToken,
-        commentAuthorName: result.authorName,
-        documentTitle: documentMeta.title,
-        documentUrl: documentMeta.url,
-        documentAuthorEmail: documentMeta.authorEmail,
-      });
-    }
   } catch (error) {
     console.error("[ax-callback] 대기 중이던 댓글 생성 실패", error);
-    redirectPath = appendError(returnTo, "comment_failed");
+    redirectPath = appendError(returnTo, "comment_save_failed");
+  }
+
+  // 댓글 생성 자체는 성공했으므로, 이후 알림 메일 실패를 "저장 실패"로 잘못 알리면 사용자가
+  // 다시 입력해 중복 댓글을 만들 수 있다 — 조용히 로그만 남기고 리다이렉트 경로는 바꾸지 않는다
+  // (notifyCommentAdded 자체가 "실패해도 댓글 작성을 막지 않는다"는 기존 정책과 일관됨).
+  if (created) {
+    try {
+      const documentMeta = await getDocumentNotificationMeta(pending.pageId);
+      if (documentMeta) {
+        await notifyCommentAdded({
+          loginToken,
+          commentAuthorName: created.authorName,
+          documentTitle: documentMeta.title,
+          documentUrl: documentMeta.url,
+          documentAuthorEmail: documentMeta.authorEmail,
+        });
+      }
+    } catch (error) {
+      console.error(
+        "[ax-callback] 댓글 저장 후 알림 메일 발송 실패(댓글은 정상 저장됨)",
+        error
+      );
+    }
   }
 
   const response = NextResponse.redirect(new URL(redirectPath, request.url));

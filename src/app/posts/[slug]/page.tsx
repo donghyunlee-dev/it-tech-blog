@@ -19,12 +19,13 @@ export const revalidate = 60;
 type LoadedPost = PostRouteResult | { status: "error" };
 
 /**
- * `/api/auth/ax-callback`이 인증 실패 시 붙이는 `?error=` 코드를 사람이 읽을 문구로 바꾼다.
- * `comment_failed`는 댓글 저장 도중 인증에 실패해 작성 중이던 내용이 사라진 경우라 재입력을
- * 명시적으로 안내한다 — 그 외(주로 로그인 트리거 실패)는 일반적인 재시도 안내로 충분하다.
+ * `/api/auth/ax-callback`이 인증/댓글 저장 실패 시 붙이는 `?error=` 코드를 사람이 읽을 문구로
+ * 바꾼다. 인증 실패와 저장 실패를 구분해 안내한다 — 댓글 생성 자체가 성공한 뒤 알림 메일만
+ * 실패한 경우는 여기 해당하지 않는다(사용자에게는 성공으로 보이고 조용히 로그만 남는다).
  */
 const AUTH_ERROR_MESSAGES: Record<string, string> = {
-  comment_failed: "댓글 인증에 실패해 작성 중이던 내용이 저장되지 않았습니다. 다시 입력해 주세요.",
+  comment_auth_failed: "댓글 작성자 인증에 실패해 저장되지 않았습니다. 다시 시도해 주세요.",
+  comment_save_failed: "댓글 저장에 실패했습니다. 다시 입력해 주세요.",
   missing_token: "로그인에 실패했습니다. 다시 시도해 주세요.",
 };
 
