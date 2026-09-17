@@ -44,9 +44,22 @@ const PENDING_COMMENT_COOKIE = "ax_pending_comment";
 // 쿠키 한 개당 실제 한도(약 4KB)보다 여유 있게 잡는다 — 이름/속성 오버헤드 감안.
 const PENDING_COMMENT_COOKIE_MAX_LENGTH = 3500;
 
-function startAxAuthLogin(loginUrl: string) {
+/**
+ * `ax_pending_comment`는 `path=/`로 브라우저의 모든 탭에 공유되는 쿠키라, 어떤 AX Auth
+ * 왕복이 그 초안을 "소비"해야 하는지 구분할 방법이 없다(state/nonce를 왕복시킬 수 있는
+ * 파라미터가 AX Auth 로그인 시작 엔드포인트에 없음 — login-integration-guide.md 확인).
+ * 평범한 로그인 트리거(게이트 버튼)는 애초에 대기 중인 댓글을 소비할 대상이 아니므로,
+ * 시작 시점에 남아 있을 수 있는 값을 지워 최소한 "다른 탭의 대기 중인 댓글이 엉뚱한 계정으로
+ * 잘못 게시되는" 최악의 경우는 없앤다(docs/tasks/viewer-pending-comment-crosstab/ 참고).
+ * 완전히 동시에 발생하는 경쟁 상태까지 막지는 못하며, 그 경우 대기 중이던 댓글이 조용히
+ * 유실될 수 있다는 잔여 위험은 감수한다.
+ */
+function startAxAuthLogin(loginUrl: string, options?: { clearPendingComment?: boolean }) {
   const returnTo = `${window.location.pathname}${window.location.search}`;
   document.cookie = `${RETURN_TO_COOKIE}=${encodeURIComponent(returnTo)}; path=/; max-age=300; SameSite=Lax`;
+  if (options?.clearPendingComment) {
+    document.cookie = `${PENDING_COMMENT_COOKIE}=; path=/; max-age=0; SameSite=Lax`;
+  }
   window.location.href = loginUrl;
 }
 
@@ -248,7 +261,10 @@ export function CommentSection({
           <p className="gate-lead">댓글을 남기려면 먼저 작성자를 확인해주세요.</p>
           <div className="gate-options">
             {loginUrl && (
-              <Button variant="primary" onClick={() => startAxAuthLogin(loginUrl)}>
+              <Button
+                variant="primary"
+                onClick={() => startAxAuthLogin(loginUrl, { clearPendingComment: true })}
+              >
                 <MsIcon /> MS 계정으로 인증 (사내 직원)
               </Button>
             )}
