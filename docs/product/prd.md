@@ -181,8 +181,8 @@ Editor는 Phase E1(기반 설정) → E2(핵심 기능) → E3(운영 자동화)
 
 Phase V4까지 병합된 변경분(#7~#13) 전체 diff를 대상으로 자체 코드 리뷰를 진행해 6건을 확인했다(4건 correctness, 2건 경미한 품질 이슈 — 모두 독립 검증 완료, 아래는 심각도순). 항목별로 순차적으로 브랜치를 만들어 수정·PR 진행 예정.
 
-- [ ] **[높음] 외부 댓글 rate limiting이 사실상 무력화됨** — `getClientIp()`가 클라이언트가 조작 가능한 `X-Forwarded-For`의 첫 값을 그대로 신뢰해, 공격자가 매 요청마다 가짜 IP를 바꿔 보내면 429 제한을 우회할 수 있다(`src/app/api/comments/route.ts`).
-- [ ] **[중간] 댓글 알림 메일 콜백의 광범위한 catch가 실패 원인을 왜곡** — `completePendingComment`가 인증 이후의 모든 실패(검증 오류, 부모 댓글 삭제, Confluence 장애, 메일 발송 실패 등)를 전부 "인증 실패로 저장 안 됨"으로 안내해, 실제로는 저장된 댓글도 사용자가 재입력·중복 작성할 수 있다(`src/app/api/auth/ax-callback/route.ts`).
+- [x] ~~[높음] 외부 댓글 rate limiting이 사실상 무력화됨~~ — **2026-09-17 정정: 오판으로 확인, 수정 불필요.** 최초 리뷰와 4개 검증 에이전트 모두 "프록시는 보통 append 방식"이라는 일반적인 프록시 지식만으로 판단했으나, [Vercel 공식 문서](https://vercel.com/docs/headers/request-headers)에 "프록시 없이 Vercel을 직접 쓸 경우 `X-Forwarded-For`를 항상 실제 IP로 덮어쓰며 외부(클라이언트가 보낸) IP는 전달하지 않는다(스푸핑 방지)"고 명시되어 있음을 뒤늦게 확인했다. 이 저장소는 리버스 프록시 없이 Vercel에 직접 배포되므로(architecture.md) `getClientIp()`의 현재 구현은 실제 배포 환경에서 안전하며 수정하지 않는다.
+- [x] ~~[중간] 댓글 알림 메일 콜백의 광범위한 catch가 실패 원인을 왜곡~~ — 인증 실패(`comment_auth_failed`)/저장 실패(`comment_save_failed`)를 구분하고, 저장 성공 후 알림만 실패한 경우는 사용자에게 실패로 보이지 않도록 수정([docs/tasks/viewer-mail-token-callback-error-handling/](../tasks/viewer-mail-token-callback-error-handling/) 참고).
 - [ ] **[중간] 탭 간 `ax_pending_comment` 쿠키 충돌** — 같은 브라우저의 다른 탭에서 AX Auth 로그인 라운드트립이 겹치면, 한 탭의 대기 중인 댓글 초안이 다른 탭의 로그인 시도에 잘못 소비될 수 있다(`src/app/api/auth/ax-callback/route.ts`, `src/components/comments/CommentSection.tsx`).
 - [ ] **[낮음] 게시 주소 리다이렉트의 UUID 비교가 대소문자를 구분** — 정규식은 대소문자 무관으로 형태만 검사하고 실제 비교는 대소문자를 구분해, 대문자가 섞인 옛 주소는 리다이렉트 대신 not-found로 빠진다(`src/lib/viewer/posts.ts`).
 - [ ] **[사소] `resolveAuthErrorMessage(error)` 중복 계산** — 같은 순수 함수를 렌더링당 두 번 호출한다(`src/app/posts/[slug]/page.tsx`).
