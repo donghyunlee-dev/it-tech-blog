@@ -165,16 +165,18 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
         </article>
 
         {post.relatedPosts.length > 0 && (
-          <section className="related-section">
-            <h2 className="section-heading">관련 글</h2>
-            <div className="related-list">
-              {post.relatedPosts.map((related) => (
-                <Link key={related.slug} href={`/posts/${related.slug}`} className="related-card">
-                  <div className="related-title">{related.title}</div>
-                </Link>
-              ))}
-            </div>
-          </section>
+          <div className={`article-layout${post.headings.length > 0 ? "" : " no-toc"}`}>
+            <section className="related-section">
+              <h2 className="section-heading">관련 글</h2>
+              <div className="related-list">
+                {post.relatedPosts.map((related) => (
+                  <Link key={related.slug} href={`/posts/${related.slug}`} className="related-card">
+                    <div className="related-title">{related.title}</div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          </div>
         )}
 
         {resolveAuthErrorMessage(error) && (
@@ -183,13 +185,15 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
           </p>
         )}
 
-        <CommentSection
-          pageId={post.pageId}
-          isLoggedIn={Boolean(session?.user)}
-          sessionEmail={sessionEmail}
-          loginUrl={loginUrl}
-          startAsGuest={comment === "guest"}
-        />
+        <div className={`article-layout${post.headings.length > 0 ? "" : " no-toc"}`}>
+          <CommentSection
+            pageId={post.pageId}
+            isLoggedIn={Boolean(session?.user)}
+            sessionEmail={sessionEmail}
+            loginUrl={loginUrl}
+            startAsGuest={comment === "guest"}
+          />
+        </div>
       </div>
 
       <SiteFooter />

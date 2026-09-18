@@ -23,19 +23,28 @@ interface CommentSectionProps {
 }
 
 /**
- * 댓글 작성 프로세스(2026-09-18 단순화, design-direction.md 참고).
+ * 댓글 작성 프로세스(2026-09-18 단순화, design-direction.md 참고. 2026-09-19 재조정).
  *
- * 화면에 "사내 직원"/"외부 방문자" 같은 구분 문구를 노출하지 않는다 — 방문자에게는 그냥
- * "로그인" 버튼 하나만 보인다. 클릭하면 AX Auth(MS) 로그인을 시도하고, 성공하면 이메일이
- * 잠긴 채로, 실패하면(토큰 만료·사내 계정 아님 등) 오류 화면 없이 이메일·이름을 직접 입력하는
- * 동일한 작성 화면으로 넘어간다. 내부적으로는 여전히 `authorType: ms_user | external`을
- * 구분해 저장하지만(data-spec.md), 그 구분은 화면에 드러나지 않는다.
+ * 화면에 "사내 직원"/"외부 방문자" 같은 구분 문구를 노출하지 않는다 — 로그인이 안 되어 있으면
+ * "로그인" 버튼 하나만 보이는 화면(gate)만 있으면 된다. 클릭하면 AX Auth(MS) 로그인을 시도하고,
+ * 성공하면 이메일이 잠긴 채로, 실패하면(토큰 만료·사내 계정 아님 등) 오류 화면 없이 이메일·
+ * 이름을 직접 입력하는 동일한 작성 화면으로 넘어간다. 내부적으로는 여전히
+ * `authorType: ms_user | external`을 구분해 저장하지만(data-spec.md), 그 구분은 화면에
+ * 드러나지 않는다.
  *
- * 단계는 "gate"(로그인 버튼만) → "compose"(이메일+이름+댓글) 두 가지뿐이다. compose 안에서도
- * 이메일·이름이 채워지기 전에는 댓글 textarea(CommentThread의 composer) 자체를 렌더링하지
- * 않는다 — `@sfood/ui`의 CommentThread는 제출 시 자신의 textarea 값을 무조건 비우므로, 만약
- * textarea를 먼저 보여주고 제출 시점에 이메일/이름을 검증하면 검증 실패 시 이미 입력한 댓글
- * 내용을 잃게 된다. 아예 준비되기 전에는 textarea를 그리지 않는 방식으로 이 문제를 피한다.
+ * 단계는 "gate"(로그인/비로그인 버튼) → "compose"(이메일+이름+댓글) 두 가지뿐이다.
+ * "비로그인"을 누르면 이메일·이름·댓글 입력창(CommentThread의 composer) 3개를 한 번에 전부
+ * 보여준다 — 이메일/이름이 비어 있어도 입력을 가리지 않고, "댓글 등록" 버튼을 눌렀을 때에만
+ * 누락을 확인해 오류를 보여준다(이전에는 이메일·이름이 채워지기 전까지 textarea 자체를 숨겼는데,
+ * 사용자가 뭘 더 입력해야 다음이 나오는지 알기 어려웠다).
+ *
+ * 주의: `@sfood/ui`의 CommentThread는 제출 시 자신의 textarea 값을 무조건 비운다. 이메일/이름
+ * 누락으로 우리 쪽에서 제출을 막아도 입력했던 댓글 본문은 사라진다 — CommentThread가 textarea를
+ * 컨트롤드 prop으로 노출하지 않아 이 저장소에서 막을 방법이 없는 알려진 한계다.
+ *
+ * "로그인 후 댓글을 남기거나" 문구 아래에 있던 "로그인"/"로그아웃" 텍스트 링크(신원 전환)는
+ * 제거했다 — 게스트 작성 화면에서는 의미가 없고, 로그인 사용자에게는 로그아웃 버튼만 남긴다
+ * (이 앱에서 로그아웃할 수 있는 유일한 경로라 완전히 없애지는 않았다).
  */
 type Stage = "gate" | "compose";
 
@@ -190,8 +199,12 @@ export function CommentSection({
   }
 
   async function handleSubmit(body: string, parentCommentId?: string) {
-    // CommentThread는 identityReady일 때만 composer를 그리므로 정상 UI 경로에서는 항상 true다.
-    if (!identityReady) return;
+    if (!identityReady) {
+      // CommentThread가 제출 시 textarea를 무조건 비우므로(위 컴포넌트 주석 참고) 입력했던
+      // 댓글 본문은 여기서 이미 사라진 상태다 — 이메일/이름을 채우면 다시 작성해야 한다.
+      setSubmitError("이메일과 이름을 입력해 주세요.");
+      return;
+    }
     setSubmitError(null);
 
     const author = verified
@@ -271,19 +284,20 @@ export function CommentSection({
               onChange={(event) => setName(event.target.value)}
             />
           </div>
-          <div className="identity-field-footer">
-            {!identityReady && (
-              <span className="login-hint">이메일과 이름을 입력하면 댓글을 작성할 수 있어요</span>
-            )}
-            <button
-              type="button"
-              className="switch-identity-link"
-              onClick={resetToGate}
-              disabled={switching}
-            >
-              {verified ? "로그아웃" : "로그인"}
-            </button>
-          </div>
+          {/* 로그인 사용자만 로그아웃 경로가 필요하다 — 게스트 작성 화면에는 신원 전환
+              링크를 두지 않는다(이미 "비로그인"을 선택한 뒤라 의미가 없다). */}
+          {verified && (
+            <div className="identity-field-footer">
+              <button
+                type="button"
+                className="switch-identity-link"
+                onClick={resetToGate}
+                disabled={switching}
+              >
+                로그아웃
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -298,13 +312,13 @@ export function CommentSection({
       ) : (
         <CommentThread
           comments={sfoodComments}
-          showComposer={stage === "compose" && identityReady}
+          showComposer={stage === "compose"}
           composerPlaceholder="댓글을 남겨보세요"
           submitLabel="댓글 등록"
           emptyMessage={loadError ? "댓글 목록을 확인할 수 없습니다." : "아직 댓글이 없습니다."}
-          onSubmit={stage === "compose" && identityReady ? (body: string) => handleSubmit(body) : undefined}
+          onSubmit={stage === "compose" ? (body: string) => handleSubmit(body) : undefined}
           onReply={
-            stage === "compose" && identityReady
+            stage === "compose"
               ? (commentId: string, body: string) => handleSubmit(body, commentId)
               : undefined
           }
