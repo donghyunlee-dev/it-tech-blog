@@ -125,39 +125,41 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
         />
 
         <article>
-          <header className="article-header">
-            {post.tags.length > 0 && (
-              <span className="kicker">
-                {post.tags.map((tag, index) => (
-                  <span key={tag}>
-                    {index > 0 && " · "}
-                    <Link href={`/tags/${encodeURIComponent(tag)}`}>{tag}</Link>
-                  </span>
-                ))}
-              </span>
-            )}
-            <h1 className="article-title">{post.title}</h1>
-            <div className="byline">
-              <div className="byline-sub">
-                {post.publishedAt && new Date(post.publishedAt).toLocaleDateString("ko-KR")}
-                {post.publishedAt && " · "}
-                읽는 데 {post.readingMinutes}분
-              </div>
-            </div>
-          </header>
-
-          {post.heroImageUrl && (
-            <div className="article-hero">
-              {/* eslint-disable-next-line @next/next/no-img-element -- Confluence 첨부 이미지를 그대로 노출 */}
-              <img src={post.heroImageUrl} alt="" />
-            </div>
-          )}
-
           <div className={`article-layout${post.headings.length > 0 ? "" : " no-toc"}`}>
-            <div
-              className="article-body viewer-content"
-              dangerouslySetInnerHTML={{ __html: post.html }}
-            />
+            <div className="article-main">
+              <header className="article-header">
+                {post.tags.length > 0 && (
+                  <span className="kicker">
+                    {post.tags.map((tag, index) => (
+                      <span key={tag}>
+                        {index > 0 && " · "}
+                        <Link href={`/tags/${encodeURIComponent(tag)}`}>{tag}</Link>
+                      </span>
+                    ))}
+                  </span>
+                )}
+                <h1 className="article-title">{post.title}</h1>
+                <div className="byline">
+                  <div className="byline-sub">
+                    {post.publishedAt && new Date(post.publishedAt).toLocaleDateString("ko-KR")}
+                    {post.publishedAt && " · "}
+                    읽는 데 {post.readingMinutes}분
+                  </div>
+                </div>
+              </header>
+
+              {post.heroImageUrl && (
+                <div className="article-hero">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- Confluence 첨부 이미지를 그대로 노출 */}
+                  <img src={post.heroImageUrl} alt="" />
+                </div>
+              )}
+
+              <div
+                className="article-body viewer-content"
+                dangerouslySetInnerHTML={{ __html: post.html }}
+              />
+            </div>
             <TableOfContents headings={post.headings} />
           </div>
         </article>

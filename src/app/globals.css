@@ -410,9 +410,12 @@ a {
 }
 
 /* ---------- 상세 페이지 ---------- */
+/* 제목·히어로·본문을 각자 따로 중앙 정렬하면(720px vs 680px vs 920px 기준이 서로 달라)
+   목차가 붙었을 때 본문만 그리드 폭(920px) 기준으로 밀려 제목과 어긋나 보인다. 셋을
+   .article-main 하나로 묶어 같은 그리드 컬럼 안에서 함께 정렬되게 한다(아래 .article-layout
+   참고) — 폭 기준을 720px에서 본문과 동일한 680px(.article-main의 실제 너비)로 통일했다. */
 .article-header {
-  max-width: 720px;
-  margin: 40px auto 0;
+  margin: 40px 0 0;
   text-align: left;
 }
 
@@ -440,8 +443,7 @@ a {
 
 /* 실제로 본문에 이미지가 있는 글만 선택적으로 쓴다(강제하지 않음) */
 .article-hero {
-  max-width: 720px;
-  margin: 0 auto 36px;
+  margin: 0 0 36px;
   border-radius: var(--radius-large);
   overflow: hidden;
   background: var(--surface-muted);
@@ -457,10 +459,6 @@ a {
    docs/tasks/viewer-publish-metadata-fix/result.md 참고) 관련 CSS도 함께 제거했다. */
 
 .article-body {
-  /* .article-layout의 그리드 컬럼(680px) 안에서 "auto" 너비가 항상 그 컬럼을 꽉 채워주지는
-     않아(실측 결과 318px로 줄어드는 경우가 있었음) width:100%로 명시한다. max-width는
-     .no-toc(그리드 없이 단독 렌더링)일 때도 680px를 넘지 않도록 그대로 남긴다. */
-  width: 100%;
   max-width: 680px;
   margin: 0 auto;
   font-size: 16px;
@@ -601,6 +599,13 @@ a {
 .article-layout.no-toc {
   grid-template-columns: 680px;
   max-width: 680px;
+}
+
+/* 그리드 컬럼(680px)의 직접 자식은 width:auto가 항상 그 컬럼을 꽉 채워주지는 않는다
+   (.article-body에서 실측한 것과 같은 문제) — 명시적으로 100%를 준다. 제목·히어로·본문은
+   전부 이 안의 평범한 블록 자식이라 각자 width를 신경 쓸 필요 없이 자동으로 꽉 찬다. */
+.article-main {
+  width: 100%;
 }
 
 .toc {
