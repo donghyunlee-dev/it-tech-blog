@@ -204,32 +204,47 @@ a {
   opacity: 0.6;
 }
 
-/* ---------- 시그니처 ③: 히어로(1면 기사) — 사진 대신 크기·타이포그래피로 무게를 준다 ---------- */
+/* ---------- 시그니처 ③: 히어로(1면 기사) — 사진 대신 크기·타이포그래피로 무게를 준다.
+   틴트 배경+왼쪽 보더(border-left) 조합은 Tailwind류 UI의 "알림/콜아웃 박스"와 형태가 겹쳐
+   "공지"로 오독되기 쉽다는 지적에 따라 제거했다 — Awwwards/Dribbble의 에디토리얼 사이트들(The
+   Lookback, Untitled UI Design/Dark Journal 등)은 예외 없이 헤드라인 영역에 배경색·보더를 쓰지
+   않고 타이포 크기·굵기만으로 위계를 표현한다(docs/guide/mockups/hero-redesign-proposal.html
+   참고). 색은 아래 카테고리 키커(pill)에만 남긴다. */
 .hero {
   display: block;
-  padding: 40px 44px;
-  background: var(--brand-red-tint);
-  border-radius: var(--radius-large);
-  margin: 24px 0 48px;
+  padding: 8px 0 0;
+  margin: 8px 0 48px;
   cursor: pointer;
-  border-left: 4px solid var(--brand-red);
-  transition: border-left-width 0.15s ease, padding-left 0.15s ease;
   color: inherit;
   text-decoration: none;
 }
 
-.hero:hover {
-  border-left-width: 8px;
-  padding-left: 40px;
+.hero:hover .hero-title {
+  color: var(--brand-red);
+}
+
+/* 히어로의 키커만 아웃라인 pill로 감싼다(다른 화면의 .kicker는 그대로 텍스트형 유지) */
+.hero .kicker {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 14px;
+  border: 1.5px solid var(--brand-red);
+  border-radius: 999px;
+  margin-bottom: 20px;
 }
 
 .hero-title {
-  font-size: 38px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
-  line-height: 1.24;
-  margin: 0 0 16px;
-  max-width: 720px;
+  font-size: 46px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1.14;
+  margin: 0 0 18px;
+  /* 박스가 있던 시절의 720px 제한을 그대로 남겨두면, 박스 없이 넓어진 컨테이너 안에서
+     제목만 좁게 묶여 조기에 줄바꿈되고 오른쪽에 배경 없는 빈 여백만 남는다(참고 사이트들은
+     헤드라인이 컨테이너 폭 대부분을 쓴다) — 컨테이너 폭까지 자연스럽게 쓰도록 제한을 없앤다.
+     excerpt는 본문 가독성을 위해 640px 제한을 그대로 둔다. */
+  max-width: none;
+  transition: color 0.15s ease;
 }
 
 .hero-excerpt {
@@ -566,6 +581,81 @@ a {
   display: none;
 }
 
+/* ---------- 목차(TOC) — 본문의 h2/h3에서 자동 추출, 본문 오른쪽 여백에 배치.
+   히어로와 같은 원칙으로 박스·배경 없이 얇은 선 + 텍스트로만 구성한다
+   (docs/guide/mockups/toc-sidebar-proposal.html 참고). 헤딩이 없는 글은 .no-toc가 붙어
+   본문만 중앙 정렬된 단일 컬럼으로 되돌아간다. */
+.article-layout {
+  display: grid;
+  grid-template-columns: 680px 200px;
+  column-gap: 40px;
+  align-items: start;
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.article-layout.no-toc {
+  grid-template-columns: 680px;
+  max-width: 680px;
+}
+
+.toc {
+  position: sticky;
+  top: 24px;
+}
+
+.toc .kicker {
+  display: block;
+  margin-bottom: 14px;
+}
+
+.toc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  border-left: 1px solid var(--border-hairline);
+}
+
+.toc-list li {
+  padding-left: 14px;
+}
+
+.toc-list a {
+  display: block;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.toc-list a:hover {
+  color: var(--brand-red);
+}
+
+.toc-list li.sub {
+  padding-left: 26px;
+}
+
+.toc-list li.sub a {
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+}
+
+/* 스크롤에 따라 지금 읽는 절만 강조(스크롤스파이) — TableOfContents.tsx의 IntersectionObserver가 붙인다 */
+.toc-list li.active {
+  margin-left: -1px;
+  border-left: 2px solid var(--brand-red);
+}
+
+.toc-list li.active a {
+  color: var(--brand-red);
+  font-weight: 700;
+}
+
 /* ---------- 시그니처 ④: 풀쿼트/콜아웃 (Confluence 정보 패널 컨버터 결과물) ---------- */
 .pullquote {
   max-width: 680px;
@@ -644,20 +734,15 @@ a {
   margin: 48px auto 0;
 }
 
-/* 댓글 작성 과정 — 화면 자체가 단계에 따라 바뀐다(순서를 표시만 하는 게 아니라).
-   ① 게이트: 댓글창 자체가 없다. 작성 방식만 고른다.
-   ② 확인: 고른 방식에 맞는 패널만 나타난다.
-   ③ 작성: 확인이 끝나야만 댓글 입력창이 나타난다.
-   2026-09-15 전면 도입: 게이트/확인 패널의 박스·버튼·입력창은 @sfood/ui의
-   Card/Button/Input/ColorTag를 쓰고, 확인 후 목록+작성창은 CommentThread를 쓴다
-   (댓글 아이템·답글·작성창 자체 CSS는 CommentThread 내부 스타일로 대체되어 제거했다).
-   여기 남은 것은 그 컴포넌트들로 표현할 수 없는 우리만의 여백/타이포 보정뿐이다. */
-.comment-gate,
-.identify-panel {
-  margin-bottom: 24px;
-}
-
+/* 댓글 작성 과정(2026-09-18 단순화, design-direction.md 참고) — 단계는 두 가지뿐이다.
+   ① 게이트: "로그인" 버튼 하나만 있다(사내/외부 구분 문구 없음).
+   ② 작성: 이메일·이름 입력을 댓글 textarea 위에 두고 한 화면에서 처리한다. MS 로그인이
+   성공하면 이메일은 잠기고, 실패하면(오류로 보여주지 않고) 이메일·이름을 직접 입력한다.
+   2026-09-15 전면 도입: 박스·버튼·입력창은 @sfood/ui의 Card/Button/Input을 쓰고, 댓글
+   목록+작성창은 CommentThread를 쓴다. 여기 남은 것은 그 컴포넌트들로 표현할 수 없는
+   우리만의 여백/타이포 보정뿐이다. */
 .comment-gate {
+  margin-bottom: 24px;
   text-align: center;
 }
 
@@ -674,56 +759,57 @@ a {
   flex-wrap: wrap;
 }
 
-.panel-label {
+/* 이메일·이름 입력 — CommentThread의 textarea 바로 위에 위치해 "위에 신원, 아래에 본문"
+   순서를 만든다(별도 확인 단계 없이 한 화면). */
+.comment-identity-fields {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.identity-field-group {
+  flex: 1;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-label {
   font-size: 12px;
   font-weight: 700;
   color: var(--text-tertiary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin-bottom: 14px;
 }
 
-.identify-fields {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.identity-confirmed-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  margin-bottom: 14px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--border-hairline);
-}
-
-.identity-confirmed-bar .who {
-  font-weight: 700;
-}
-
-.identity-confirmed-bar .how {
-  color: var(--text-tertiary);
-  font-weight: 500;
-}
-
-.composer-footer {
+.identity-field-footer {
+  flex-basis: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-top: 10px;
-  border-top: 1px solid var(--border-hairline);
-  padding-top: 12px;
-  flex-wrap: wrap;
 }
 
 .login-hint {
   font-size: 12px;
   color: var(--text-tertiary);
+}
+
+.switch-identity-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-decoration: underline;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+.switch-identity-link:hover {
+  color: var(--brand-red);
 }
 
 /* SiteFooter의 "RSS 구독하기"는 실제 이동(Link)이라 @sfood/ui Button(버튼 전용) 대신
@@ -1007,6 +1093,16 @@ footer.site-footer {
 
   .footer-grid {
     grid-template-columns: 1fr;
+  }
+
+  /* 좁은 화면에서는 사이드 목차가 놓일 자리가 없다 — 본문만 남기고 숨긴다 */
+  .article-layout {
+    grid-template-columns: 1fr;
+    max-width: 680px;
+  }
+
+  .toc {
+    display: none;
   }
 }
 

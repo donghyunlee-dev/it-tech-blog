@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>본문 목차(TOC) 제안 — Before/After + 출처</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<style>
+  :root {
+    --brand-red: #e4002B;
+    --brand-red-deep: #b8001f;
+    --brand-red-tint: #fdecef;
+    --text-primary: #000000;
+    --text-secondary: #54585A;
+    --text-tertiary: #8a8d90;
+    --text-disabled: rgba(0, 0, 0, 0.24);
+    --surface: #ffffff;
+    --surface-muted: #f4f4f4;
+    --border-hairline: rgba(0, 0, 0, 0.08);
+    --shadow-card: rgba(0, 0, 0, 0.02) 0px 0px 0px 1px, rgba(0, 0, 0, 0.04) 0px 2px 6px, rgba(0, 0, 0, 0.1) 0px 4px 8px;
+    --radius-card: 20px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--surface); color: var(--text-primary);
+    font-family: "Pretendard", "맑은고딕", -apple-system, system-ui, Roboto, "Helvetica Neue", sans-serif;
+    font-weight: 500;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  .doc-title { font-size: 26px; font-weight: 700; letter-spacing: -0.4px; margin: 0 0 8px; }
+  .doc-lead { font-size: 14.5px; color: var(--text-secondary); line-height: 1.6; margin: 0 0 40px; max-width: 720px; }
+
+  .section-label { display: flex; align-items: center; gap: 10px; margin: 0 0 20px; }
+  .section-label .tag {
+    font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+    padding: 5px 10px; border-radius: 14px;
+  }
+  .tag.as-is { background: var(--surface-muted); color: var(--text-secondary); }
+  .tag.to-be { background: var(--brand-red); color: #fff; }
+  .section-label h2 { font-size: 16px; font-weight: 700; margin: 0; }
+  .section-note { font-size: 13px; color: var(--text-tertiary); margin: -10px 0 20px; line-height: 1.6; }
+
+  hr.divider { border: none; border-top: 1px solid var(--border-hairline); margin: 56px 0; }
+
+  /* ---------- 상세 페이지 재현(축소판) ---------- */
+  .kicker {
+    display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--brand-red); margin-bottom: 8px;
+  }
+  .article-demo { border: 1px solid var(--border-hairline); border-radius: var(--radius-card); padding: 32px; }
+  .article-header { max-width: 640px; }
+  .article-title { font-size: 26px; font-weight: 700; letter-spacing: -0.3px; line-height: 1.3; margin: 0 0 14px; }
+  .byline { font-size: 12.5px; color: var(--text-tertiary); padding-bottom: 18px; margin-bottom: 24px; border-bottom: 1px solid var(--border-hairline); }
+
+  .demo-layout { display: grid; grid-template-columns: 1fr 200px; gap: 36px; align-items: start; }
+  .demo-layout.no-toc { grid-template-columns: 1fr; max-width: 640px; }
+
+  .article-body-demo { font-size: 14.5px; line-height: 1.75; color: var(--text-primary); }
+  .article-body-demo p { margin: 0 0 16px; }
+  .article-body-demo h2 { font-size: 17px; font-weight: 700; margin: 28px 0 10px; }
+
+  /* 오른쪽 여백이 그냥 비어있음을 보여주는 자리표시 해칭 */
+  .empty-gutter {
+    border: 1px dashed rgba(228,0,43,0.3); border-radius: 12px; min-height: 300px;
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    font-size: 12.5px; color: var(--brand-red-deep); background: repeating-linear-gradient(
+      45deg, rgba(228,0,43,0.04), rgba(228,0,43,0.04) 8px, transparent 8px, transparent 16px
+    );
+    padding: 16px;
+  }
+
+  /* ---------- TOC(제안) ---------- */
+  .toc {
+    position: sticky; top: 24px;
+  }
+  .toc .kicker { margin-bottom: 14px; }
+  .toc-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 11px; border-left: 1px solid var(--border-hairline); }
+  .toc-list li { padding-left: 14px; }
+  .toc-list a {
+    font-size: 13px; color: var(--text-secondary); text-decoration: none; line-height: 1.4; display: block;
+  }
+  .toc-list a:hover { color: var(--brand-red); }
+  .toc-list li.active { margin-left: -1px; border-left: 2px solid var(--brand-red); }
+  .toc-list li.active a { color: var(--brand-red); font-weight: 700; }
+  .toc-list li.sub { padding-left: 26px; }
+  .toc-list li.sub a { font-size: 12.5px; color: var(--text-tertiary); }
+
+  .flag-row { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  .flag {
+    font-size: 12px; font-weight: 600; border-radius: 8px; padding: 6px 10px;
+  }
+  .flag.warn { color: var(--brand-red-deep); background: var(--brand-red-tint); border: 1px solid rgba(228,0,43,0.25); }
+  .flag.good { color: #1a7f4e; background: #eaf7f0; border: 1px solid rgba(26,127,78,0.25); }
+
+  /* ---------- 출처 그리드 ---------- */
+  .source-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .source-card { border-radius: var(--radius-card); overflow: hidden; box-shadow: var(--shadow-card); }
+  .source-card img { width: 100%; display: block; aspect-ratio: 4 / 3; object-fit: cover; background: var(--surface-muted); }
+  .source-body { padding: 14px 16px 16px; }
+  .source-name { font-size: 14px; font-weight: 700; margin: 0 0 4px; }
+  .source-name a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--border-hairline); }
+  .source-name a:hover { color: var(--brand-red); border-color: var(--brand-red); }
+  .source-takeaway { font-size: 12.5px; color: var(--text-secondary); line-height: 1.55; margin: 0; }
+
+  @media (max-width: 700px) {
+    .demo-layout { grid-template-columns: 1fr; }
+    .source-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 class="doc-title">본문 목차(TOC) 추가 제안</h1>
+  <p class="doc-lead">
+    문서 상세 페이지의 본문 폭(680px)은 design-direction.md가 의도한 읽기 폭 제한이라 정상이지만,
+    홈 화면과 달리 상세 페이지엔 그 옆을 채울 사이드바가 없어 넓은 화면에서 오른쪽이 그냥 빈 공간으로
+    남는다. 본문에는 이미 h2/h3 헤딩 스타일이 있으므로, velog와 유사 서비스들의 TOC 패턴을 참고해
+    그 여백에 자동 생성 목차를 넣는 방향을 제안한다.
+  </p>
+
+  <div class="section-label"><span class="tag as-is">AS-IS</span><h2>현재 — 본문 옆이 빈 여백</h2></div>
+  <p class="section-note">680px 본문은 그대로 두되, 그 옆(넓은 화면 기준)에 아무 콘텐츠가 없다.</p>
+  <div class="article-demo">
+    <div class="demo-layout no-toc">
+      <div>
+        <div class="article-header">
+          <span class="kicker">Backend</span>
+          <h1 class="article-title">한꺼번에 짊어지던 배치를 하나씩 흘려보내는 워크플로로</h1>
+          <div class="byline">김현겸 · 2026.09.08 · 읽는 데 6분</div>
+        </div>
+        <div class="article-body-demo">
+          <p>기존 배치 시스템은 하나의 실패가 전체 파이프라인을 멈추게 했습니다.</p>
+          <h2>워크플로 구조 설계</h2>
+          <p>각 단계는 독립적으로 재시도 가능하고, 실패 지점부터 이어서 처리할 수 있습니다.</p>
+          <h2>운영 결과</h2>
+          <p>배치 실행 시간은 40% 줄었고, 장애 대응 시간도 눈에 띄게 짧아졌습니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="flag-row"><span class="flag warn">⚠ 넓은 화면에서 본문 오른쪽이 활용되지 않음</span></div>
+
+  <hr class="divider" />
+
+  <div class="section-label"><span class="tag to-be">TO-BE 제안</span><h2>오른쪽 여백에 자동 생성 목차</h2></div>
+  <p class="section-note">본문의 h2/h3에서 자동 추출. 박스·배경 없이 얇은 세로선 + 텍스트 링크만 사용(히어로에서 정한 "장식 없이 타이포로" 원칙과 동일). 스크롤에 따라 현재 읽는 절만 레드로 굵게 표시.</p>
+  <div class="article-demo">
+    <div class="demo-layout">
+      <div>
+        <div class="article-header">
+          <span class="kicker">Backend</span>
+          <h1 class="article-title">한꺼번에 짊어지던 배치를 하나씩 흘려보내는 워크플로로</h1>
+          <div class="byline">김현겸 · 2026.09.08 · 읽는 데 6분</div>
+        </div>
+        <div class="article-body-demo">
+          <p>기존 배치 시스템은 하나의 실패가 전체 파이프라인을 멈추게 했습니다.</p>
+          <h2>워크플로 구조 설계</h2>
+          <p>각 단계는 독립적으로 재시도 가능하고, 실패 지점부터 이어서 처리할 수 있습니다.</p>
+          <h2>운영 결과</h2>
+          <p>배치 실행 시간은 40% 줄었고, 장애 대응 시간도 눈에 띄게 짧아졌습니다.</p>
+        </div>
+      </div>
+      <aside class="toc">
+        <span class="kicker">목차</span>
+        <ul class="toc-list">
+          <li><a href="#">들어가며</a></li>
+          <li class="active"><a href="#">워크플로 구조 설계</a></li>
+          <li class="sub"><a href="#">재시도 정책</a></li>
+          <li><a href="#">운영 결과</a></li>
+          <li><a href="#">다음 계획</a></li>
+        </ul>
+      </aside>
+    </div>
+  </div>
+  <div class="flag-row">
+    <span class="flag good">✓ 본문의 h2/h3에서 자동 추출 — 별도 입력 불필요</span>
+    <span class="flag good">✓ 박스 없이 얇은 선 + 텍스트만(장식 최소화 원칙 유지)</span>
+    <span class="flag good">✓ 빈 여백을 탐색 기능으로 전환</span>
+  </div>
+
+  <hr class="divider" />
+
+  <h2 style="font-size:18px; font-weight:700; margin:0 0 6px;">참고한 사이트 (2026-09-17 직접 확인)</h2>
+  <p class="section-note">
+    velog·Untitled UI 2곳은 실제로 열어 구조를 확인했다. "스크롤에 따라 현재 절을 굵게 표시"하는
+    부분은 이 2곳에서 직접 확인한 것은 아니고, Stripe Docs·Notion·GitBook 등에서 널리 쓰이는
+    통상적인 스크롤스파이(scroll-spy) 관행을 참고해 추가한 것임을 밝힌다.
+  </p>
+  <div class="source-grid">
+    <div class="source-card">
+      <img src="https://cdn.dribbble.com/userupload/3908431/file/original-e4957ffb27ca9a269555ca8d83df8264.jpg?format=webp&resize=800x600&vertical=center" alt="Untitled UI Table of contents" loading="lazy" />
+      <div class="source-body">
+        <p class="source-name">Untitled UI — Blog Post (Dribbble)</p>
+        <p class="source-takeaway">"Table of contents" 라벨 + 목록을 본문 리드 문단 옆에 배치. 박스 없이 텍스트 리스트로만 구성.</p>
+      </div>
+    </div>
+    <div class="source-card">
+      <div style="aspect-ratio:4/3; background:var(--surface-muted); display:flex; align-items:center; justify-content:center; font-size:12.5px; color:var(--text-tertiary); text-align:center; padding:16px;">
+        velog 실제 글 DOM 구조 직접 조사<br />(스크린샷 대신 구조 인용)
+      </div>
+      <div class="source-body">
+        <p class="source-name"><a href="https://velog.io" target="_blank" rel="noopener">velog.io — 실제 게시글 페이지</a></p>
+        <p class="source-takeaway">본문 h2에서 자동 추출한 앵커 링크 목록을 본문 우측에 배치. 배경·보더 없는 순수 텍스트 링크(<code>&lt;a href="#제목-슬러그"&gt;</code>). 스크롤 고정은 아니고 본문 상단에 한 번 노출.</p>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

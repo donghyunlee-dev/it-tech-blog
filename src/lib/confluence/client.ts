@@ -175,7 +175,10 @@ export async function listPageLabels(
 export interface ConfluenceFooterComment {
   id: string;
   parentCommentId: string | null;
-  createdAt: string;
+  // 실 API 응답을 직접 확인한 결과, 생성 시각은 최상위 `createdAt`이 아니라 `version.createdAt`에
+  // 있다(ConfluencePage와 동일한 v2 관례). 최상위에 있다고 잘못 가정하면 항상 undefined가 되어,
+  // `.sort()`가 댓글 2개 이상일 때(비교 함수가 실제로 호출될 때)만 터지는 잠복 버그가 된다.
+  version: { createdAt: string };
   body?: { storage: { value: string; representation: "storage" } };
 }
 
