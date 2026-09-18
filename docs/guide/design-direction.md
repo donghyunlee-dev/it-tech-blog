@@ -79,6 +79,23 @@
 
 이 흐름은 [mockups/blog-editorial-direction.html](mockups/blog-editorial-direction.html) 정적 목업에 먼저 구현됐다(MS 인증은 900ms 지연으로 흉내냄) — 화면 전환이 더미 애니메이션이 아니라 실제로 이전 단계의 DOM 요소가 사라지는 방식이었다. 2026-09-15 [src/components/comments/CommentSection.tsx](../../src/components/comments/CommentSection.tsx)로 실제 구현되면서, MS 인증은 진짜 AX Auth 리다이렉트로, 게이트/확인 단계는 `@sfood/ui`의 `Card`/`Button`/`Input`/`ColorTag`로, 신원 확인 후 목록·작성창은 `CommentThread`로 교체됐다 — 단계 전환 로직(한 번에 하나만 실제로 렌더링)은 목업의 원칙 그대로다.
 
+### 댓글 작성 프로세스 단순화 (2026-09-18 수정)
+
+**문제**: 위 3단계(게이트 2버튼 → 확인 카드 → 작성창) 구조를 실제로 써 보니 두 가지가 걸렸다.
+1. 게이트의 두 버튼 문구(`MS 계정으로 인증 (사내 직원)` / `이름으로 계속하기 (외부 방문자)`)가 공개 방문자에게 불필요한 사내 구분 용어를 그대로 노출했다.
+2. MS 로그인이 실패하면(토큰 만료, 사내 계정 아님 등) `pages.signIn` 기본 동작 때문에 홈으로 튕겨나가 일반적인 로그인 오류로 취급됐다 — 원래 보던 글로 돌아오지도 못했다.
+
+**수정된 흐름**: 단계를 두 가지로 줄였다.
+1. **게이트** — "로그인" 버튼 하나만 있다. 사내/외부 구분 문구는 화면 어디에도 없다.
+2. **작성** — 이메일 라벨+입력, 이름 라벨+입력을 댓글 textarea 위에 두고 한 화면에서 처리한다.
+   - MS 인증 성공: 이메일은 세션 값으로 잠기고, 이름은 이메일 앞부분이 기본값으로 채워지되 수정 가능(비워도 됨).
+   - MS 인증 실패: 오류 화면 대신 같은 작성 화면으로 넘어가되, 이메일·이름이 비어 있고 직접 입력해야 한다.
+   - 이메일·이름이 채워지기 전에는 댓글 textarea 자체를 그리지 않는다 — `CommentThread`(`@sfood/ui`)가 제출 시 자신의 textarea 값을 무조건 비우기 때문에, 신원이 준비되지 않은 채로 텍스트를 입력했다가 검증에 실패하면 입력한 내용을 잃는다. 아예 준비되기 전엔 textarea를 그리지 않아 이 문제를 원천적으로 피한다.
+
+내부 데이터 모델(`authorType: ms_user | external`, data-spec.md)은 그대로다 — 화면에 그 구분이 드러나지 않을 뿐이다. 구현 상세는 [viewer-comment-login-guest-fallback](../tasks/viewer-comment-login-guest-fallback/)와 `src/lib/auth.ts`(`pages.signIn`)·`src/app/api/auth/ax-signin-failed/route.ts`·`src/app/api/auth/ax-callback/route.ts` 참고.
+
+**게이트에 "비로그인" 버튼 추가(2026-09-18)**: 게스트가 MS 로그인을 시도했다가 실패해야만 이메일·이름 입력 화면에 도달할 수 있었던 왕복을 없애기 위해, 게이트에 "로그인" 옆에 "비로그인" 버튼을 나란히 둔다. 클릭하면 AX Auth로 리다이렉트하지 않고 그 자리에서 바로 이메일·이름+댓글 작성 화면으로 전환된다(MS 로그인 실패 시 도달하는 화면과 완전히 동일한 화면). MS 로그인 프로세스 자체는 변경하지 않았다.
+
 ## "AI 슬롭(AI Slop)" 안티패턴 점검 (2026-09-15)
 
 [925studios의 AI Slop Web Design 가이드](https://www.925studios.co/blog/ai-slop-web-design-guide)를 기준으로 목업을 다시 점검했다. 이 글이 정의하는 "AI 슬롭"은 AI 툴이 기본값을 그대로 둬서 생기는, 브랜드와 무관한 장식(Inter 폰트, 보라-파랑 그라데이션, 균일한 카드, 반응 없는 호버 등)이다. 실제로 우리 목업에 2가지가 남아있었다.

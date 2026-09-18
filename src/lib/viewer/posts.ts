@@ -9,7 +9,7 @@ import {
 import type { PublishMetadata, PublishViewerMetadata } from "@/lib/viewer/publish-metadata";
 import { NotFoundError } from "@/lib/errors";
 import { getSiteBaseUrl } from "@/lib/site";
-import { convertStorageToHtml } from "./converter";
+import { convertStorageToHtml, extractHeadings, TocHeading } from "./converter";
 
 const PUBLISH_PROPERTY_KEY = "publishMetadata";
 const SOURCE_DOCUMENT_PROPERTY_KEY = "sourceDocument";
@@ -43,6 +43,8 @@ export interface PublishedPostDetail extends PublishedPostSummary {
   readingMinutes: number;
   /** 본문에 실제 이미지가 있을 때만 채워진다(정책: 이미지는 있으면 보너스). */
   heroImageUrl: string | null;
+  /** 본문의 h2/h3에서 자동 추출한 목차. 헤딩이 없으면 빈 배열(그 경우 TOC 사이드바 자체를 생략한다). */
+  headings: TocHeading[];
   relatedPosts: Array<{ slug: string; title: string }>;
 }
 
@@ -163,6 +165,7 @@ async function buildPostDetail(
     html,
     readingMinutes: estimateReadingMinutes(html),
     heroImageUrl: extractFirstImageSrc(html),
+    headings: extractHeadings(html),
     relatedPosts,
   };
 }

@@ -7,10 +7,11 @@ import { getAxAuthLoginUrl } from "@/lib/ax-auth/client";
 import { CommentSection } from "@/components/comments/CommentSection";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
+import { TableOfContents } from "@/components/posts/TableOfContents";
 
 interface PostPageProps {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; comment?: string }>;
 }
 
 // Confluence를 매 요청마다 직접 조회하지 않도록 짧은 주기로 재검증한다(ISR).
@@ -68,7 +69,7 @@ export async function generateMetadata({
 
 export default async function PostPage({ params, searchParams }: PostPageProps) {
   const { slug } = await params;
-  const { error } = await searchParams;
+  const { error, comment } = await searchParams;
   const result = await loadPost(slug);
 
   // 게시 주소(slug)만 바뀐 문서 — 검색엔진·기존 링크가 링크 가치를 유지하도록 영구 리다이렉트한다.
@@ -152,10 +153,13 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
             </div>
           )}
 
-          <div
-            className="article-body viewer-content"
-            dangerouslySetInnerHTML={{ __html: post.html }}
-          />
+          <div className={`article-layout${post.headings.length > 0 ? "" : " no-toc"}`}>
+            <div
+              className="article-body viewer-content"
+              dangerouslySetInnerHTML={{ __html: post.html }}
+            />
+            <TableOfContents headings={post.headings} />
+          </div>
         </article>
 
         {post.relatedPosts.length > 0 && (
@@ -182,6 +186,7 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
           isLoggedIn={Boolean(session?.user)}
           sessionEmail={sessionEmail}
           loginUrl={loginUrl}
+          startAsGuest={comment === "guest"}
         />
       </div>
 

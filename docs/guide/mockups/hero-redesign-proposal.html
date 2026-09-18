@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>히어로 리디자인 제안 — Before/After + 출처</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<style>
+  :root {
+    --brand-red: #e4002B;
+    --brand-red-deep: #b8001f;
+    --brand-red-tint: #fdecef;
+    --text-primary: #000000;
+    --text-secondary: #54585A;
+    --text-tertiary: #8a8d90;
+    --text-disabled: rgba(0, 0, 0, 0.24);
+    --surface: #ffffff;
+    --surface-muted: #f4f4f4;
+    --border-hairline: rgba(0, 0, 0, 0.08);
+    --shadow-card: rgba(0, 0, 0, 0.02) 0px 0px 0px 1px, rgba(0, 0, 0, 0.04) 0px 2px 6px, rgba(0, 0, 0, 0.1) 0px 4px 8px;
+    --radius-button: 8px;
+    --radius-badge: 14px;
+    --radius-card: 20px;
+    --radius-large: 32px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--surface); color: var(--text-primary);
+    font-family: "Pretendard", "맑은고딕", -apple-system, system-ui, Roboto, "Helvetica Neue", sans-serif;
+    font-weight: 500;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  .doc-title { font-size: 26px; font-weight: 700; letter-spacing: -0.4px; margin: 0 0 8px; }
+  .doc-lead { font-size: 14.5px; color: var(--text-secondary); line-height: 1.6; margin: 0 0 48px; max-width: 680px; }
+
+  .section-label {
+    display: flex; align-items: center; gap: 10px; margin: 0 0 20px;
+  }
+  .section-label .tag {
+    font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+    padding: 5px 10px; border-radius: var(--radius-badge);
+  }
+  .tag.as-is { background: var(--surface-muted); color: var(--text-secondary); }
+  .tag.to-be { background: var(--brand-red); color: #fff; }
+  .tag.avoid { background: #2b2b2b; color: #fff; }
+  .section-label h2 { font-size: 16px; font-weight: 700; margin: 0; }
+  .section-note { font-size: 13px; color: var(--text-tertiary); margin: -10px 0 20px; line-height: 1.6; }
+
+  /* ---------- AS-IS 히어로 (현재) ---------- */
+  .hero-old {
+    padding: 40px 44px; background: var(--brand-red-tint); border-radius: var(--radius-large);
+    border-left: 4px solid var(--brand-red);
+  }
+  .hero-old .kicker { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--brand-red); margin-bottom: 8px; }
+  .hero-old .hero-title { font-size: 38px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.24; margin: 0 0 16px; }
+  .hero-old .hero-excerpt { font-size: 15.5px; color: var(--text-secondary); line-height: 1.65; margin: 0 0 20px; max-width: 560px; }
+  .hero-old .hero-meta { font-size: 13px; color: var(--text-tertiary); }
+
+  .flag-row { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  .flag {
+    font-size: 12px; font-weight: 600; color: var(--brand-red-deep); background: var(--brand-red-tint);
+    border: 1px solid rgba(228,0,43,0.25); border-radius: 8px; padding: 6px 10px;
+  }
+
+  /* ---------- TO-BE 히어로 (제안) ---------- */
+  .hero-new { padding: 8px 0 0; }
+  .hero-new .pill-kicker {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12.5px; font-weight: 700; letter-spacing: 0.02em;
+    padding: 7px 14px; border-radius: 999px; border: 1.5px solid var(--brand-red);
+    color: var(--brand-red); margin-bottom: 20px;
+  }
+  .hero-new .hero-title {
+    font-size: 46px; font-weight: 800; letter-spacing: -1px; line-height: 1.14;
+    margin: 0 0 18px; max-width: 720px;
+  }
+  .hero-new .hero-excerpt { font-size: 16px; color: var(--text-secondary); line-height: 1.65; margin: 0 0 20px; max-width: 560px; }
+  .hero-new .hero-meta { font-size: 13px; color: var(--text-tertiary); }
+
+  /* ---------- 회피 사례(대조군) ---------- */
+  .hero-avoid {
+    padding: 40px 44px; border-radius: var(--radius-large); position: relative; overflow: hidden;
+    background: #12131a; color: #fff;
+  }
+  .hero-avoid::before, .hero-avoid::after {
+    content: ""; position: absolute; border-radius: 50%; filter: blur(40px); opacity: 0.55;
+  }
+  .hero-avoid::before { width: 220px; height: 220px; background: #ff5a36; top: -60px; right: -40px; }
+  .hero-avoid::after { width: 180px; height: 180px; background: #3a7bff; bottom: -60px; left: 20%; }
+  .hero-avoid .badge-neon {
+    position: relative; z-index: 1; display: inline-block; font-size: 11.5px; font-weight: 700;
+    padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.3); color: #9be8ff; margin-bottom: 16px;
+    box-shadow: 0 0 12px rgba(155,232,255,0.5);
+  }
+  .hero-avoid .hero-title { position: relative; z-index: 1; font-size: 32px; font-weight: 800; margin: 0 0 12px; }
+  .hero-avoid .hero-excerpt { position: relative; z-index: 1; font-size: 14.5px; color: rgba(255,255,255,0.7); margin: 0; }
+
+  hr.divider { border: none; border-top: 1px solid var(--border-hairline); margin: 56px 0; }
+
+  /* ---------- 출처 그리드 ---------- */
+  .source-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .source-card {
+    border-radius: var(--radius-card); overflow: hidden; box-shadow: var(--shadow-card);
+  }
+  .source-card img { width: 100%; display: block; aspect-ratio: 4 / 3; object-fit: cover; background: var(--surface-muted); }
+  .source-body { padding: 14px 16px 16px; }
+  .source-name { font-size: 14px; font-weight: 700; margin: 0 0 4px; }
+  .source-name a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--border-hairline); }
+  .source-name a:hover { color: var(--brand-red); border-color: var(--brand-red); }
+  .source-takeaway { font-size: 12.5px; color: var(--text-secondary); line-height: 1.55; margin: 0; }
+  .source-card.avoid .source-takeaway { color: #b8001f; }
+
+  @media (max-width: 640px) {
+    .source-grid { grid-template-columns: 1fr; }
+    .hero-new .hero-title { font-size: 32px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 class="doc-title">히어로 섹션 리디자인 제안</h1>
+  <p class="doc-lead">
+    현재 히어로(레드 틴트 배경 + 왼쪽 보더)는 Tailwind류 UI에서 흔히 쓰는 "알림/콜아웃 박스" 형태와 겹쳐 신문 1면 헤드라인보다
+    "공지사항"처럼 읽힐 수 있다는 지적에 따라, Awwwards·Dribbble에서 실제로 호평받는 에디토리얼/블로그 사이트 7곳을 확인하고
+    공통 패턴을 반영해 다시 그렸다. 하단 "참고한 사이트"에 실제 캡처와 링크를 남긴다.
+  </p>
+
+  <div class="section-label"><span class="tag as-is">AS-IS</span><h2>현재 — 틴트 박스 + 왼쪽 보더</h2></div>
+  <p class="section-note">design-direction.md의 "신문 1면" 의도는 맞지만, 실제 형태(색 배경 + border-left)는 알림 박스 UI 관례와 겹친다.</p>
+  <div class="hero-old">
+    <span class="kicker">Backend · 엔지니어링 노트 9</span>
+    <h1 class="hero-title">한꺼번에 짊어지던 배치를 하나씩 흘려보내는 워크플로로</h1>
+    <p class="hero-excerpt">Temporal 도입은 무거웠고 배치는 그대로 둘 수 없었기에 — 입맛대로 골라 Claude로 뚝딱 만든 워크플로 엔진 개발기.</p>
+    <div class="hero-meta">김현겸 · 2026.09.08</div>
+  </div>
+  <div class="flag-row">
+    <span class="flag">⚠ border-left + tint = 흔한 "alert callout" 형태</span>
+    <span class="flag">⚠ "공지"로 오독될 여지</span>
+  </div>
+
+  <hr class="divider" />
+
+  <div class="section-label"><span class="tag to-be">TO-BE 제안</span><h2>박스·보더 제거 — 아웃라인 pill + 큰 타이포</h2></div>
+  <p class="section-note">배경/보더 없이 페이지와 동일한 흰 배경 위에 작은 아웃라인 pill 배지 + 훨씬 큰 볼드 타이틀로만 무게를 준다.</p>
+  <div class="hero-new">
+    <span class="pill-kicker">● Backend · 엔지니어링 노트 9</span>
+    <h1 class="hero-title">한꺼번에 짊어지던 배치를 하나씩 흘려보내는 워크플로로</h1>
+    <p class="hero-excerpt">Temporal 도입은 무거웠고 배치는 그대로 둘 수 없었기에 — 입맛대로 골라 Claude로 뚝딱 만든 워크플로 엔진 개발기.</p>
+    <div class="hero-meta">김현겸 · 2026.09.08</div>
+  </div>
+  <div class="flag-row">
+    <span class="flag" style="color:#1a7f4e; background:#eaf7f0; border-color:rgba(26,127,78,0.25);">✓ 배경색 없음 — 페이지와 한 몸</span>
+    <span class="flag" style="color:#1a7f4e; background:#eaf7f0; border-color:rgba(26,127,78,0.25);">✓ 색은 pill 배지에만 — 제목은 전체 단색</span>
+  </div>
+
+  <hr class="divider" />
+
+  <div class="section-label"><span class="tag avoid">피해야 할 사례</span><h2>글로우 블롭 + 네온 배지 (대조군)</h2></div>
+  <p class="section-note">조사 중 발견한 "AI스러운 느낌"의 실제 사례(Evolveify) — 저희가 원래 쓰던 틴트+보더와는 다른 종류의 안티패턴이지만, "장식이 곧 개성"이라 착각하기 쉬운 함정이라 같이 남겨둔다.</p>
+  <div class="hero-avoid">
+    <span class="badge-neon">◆ AFFILIATE ECONOMY INTELLIGENCE</span>
+    <h1 class="hero-title">The affiliate economy is being rebuilt.</h1>
+    <p class="hero-excerpt">Operator-level signals on fintech growth, AI traffic, attribution, fraud, and regulated finance culture.</p>
+  </div>
+  <div class="flag-row">
+    <span class="flag">⚠ 배경 그라디언트 블롭 남발</span>
+    <span class="flag">⚠ 네온 글로우 배지</span>
+    <span class="flag">⚠ 유리질감(glassmorphism) 카드</span>
+  </div>
+
+  <hr class="divider" />
+
+  <h2 style="font-size:18px; font-weight:700; margin:0 0 6px;">참고한 사이트 (2026-09-17 직접 확인)</h2>
+  <p class="section-note">각 사이트를 직접 열어 캡처했다. 굵은 타이포·아웃라인 pill·색 최소화라는 공통 패턴을 위 TO-BE 안에 반영했다.</p>
+  <div class="source-grid">
+    <div class="source-card">
+      <img src="https://assets.awwwards.com/awards/media/cache/thumb_880_660/submissions/2026/03/69a59011a94c2061667766.jpg" alt="The Lookback" loading="lazy" />
+      <div class="source-body">
+        <p class="source-name"><a href="https://www.awwwards.com/sites/the-lookback" target="_blank" rel="noopener">The Lookback (Awwwards)</a></p>
+        <p class="source-takeaway">흰 배경에 검정 볼드 타이포만 — 박스·테두리·색 전혀 없이 크기만으로 헤드라인 무게를 냄.</p>
+      </div>
+    </div>
+    <div class="source-card">
+      <img src="https://assets.awwwards.com/awards/media/cache/thumb_880_660/submissions/2026/04/69cfc4417a49a283116817.jpg" alt="Font Combinations" loading="lazy" />
+      <div class="source-body">
+        <p class="source-name"><a href="https://www.awwwards.com/sites/font-combinations" target="_blank" rel="noopener">Font Combinations (Awwwards)</a></p>
+        <p class="source-takeaway">중앙 정렬, 제목 위 작은 아웃라인 pill 배지 하나, 제목 속 일부 단어에 포인트 컬러 — 단, 이 단어 강조는 사람이 매번 직접 고른 것이라 우리 서비스(자동 발행)에는 채택하지 않음.</p>
+      </div>
+    </div>
+    <div class="source-card">
+      <img src="https://assets.awwwards.com/awards/media/cache/thumb_880_660/submissions/2026/04/69de1e67d167a401126890.png" alt="GlobalTrendDigest" loading="lazy" />
+      <div class="source-body">
+        <p class="source-name"><a href="https://www.awwwards.com/sites/globaltrenddigest-com" target="_blank" rel="noopener">GlobalTrendDigest (Awwwards)</a></p>
+        <p class="source-takeaway">사진 아래 볼드 헤드라인 + 작은 파란 pill 카테고리 배지(큰 박스 아님) + 메타 한 줄.</p>
+      </div>
+    </div>
+    <div class="source-card">
+      <img src="https://cdn.dribbble.com/userupload/7687186/file/original-b0e192d73c6e1b6bfa26078e2c302a9f.jpg?format=webp&resize=800x600&vertical=center" alt="Untitled UI Design Journal" loading="lazy" />
+      <div class="source-body">
+        <p class="source-name">Untitled UI — Design Journal (Dribbble)</p>
+        <p class="source-takeaway">흰 배경, 제목 위 작은 아웃라인 pill("Design Journal")만 두고 나머지는 전부 타이포로 위계 표현.</p>
+      </div>
+    </div>
+    <div class="source-card">
+      <img src="https://cdn.dribbble.com/userupload/16121140/file/original-ff28b814c80127fa6f50d95f18cb9e6b.jpg?format=webp&resize=800x600&vertical=center" alt="Untitled UI Dark Journal" loading="lazy" />
+      <div class="source-body">
+        <p class="source-name">Untitled UI — Dark Journal (Dribbble)</p>
+        <p class="source-takeaway">다크 모드에서도 동일 패턴 유지 — 헤드라인 영역에 별도 배경색·박스를 쓰지 않음.</p>
+      </div>
+    </div>
+    <div class="source-card avoid">
+      <img src="https://assets.awwwards.com/awards/media/cache/thumb_880_660/submissions/2026/05/6a15617ef219f248225410.jpg" alt="Evolveify (피해야 할 사례)" loading="lazy" />
+      <div class="source-body">
+        <p class="source-name"><a href="https://www.awwwards.com/sites/www-evolveify-com" target="_blank" rel="noopener">Evolveify (Awwwards) — 대조군</a></p>
+        <p class="source-takeaway">글로우 블롭 배경 + 네온 pill + 유리질감 카드. "장식이 곧 AI스러움"의 실제 사례 — 피해야 할 방향.</p>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -50,7 +50,7 @@ export async function listComments(pageId: string): Promise<CommentNode[]> {
     records.push({
       id: comment.id,
       parentCommentId: comment.parentCommentId,
-      createdAt: comment.createdAt,
+      createdAt: comment.version.createdAt,
       authorName: parsed.authorName,
       body: parsed.body,
     });
@@ -134,7 +134,7 @@ export async function listRecentComments(
             commentId: comment.id,
             authorName: parsed.authorName,
             quote: truncateQuote(parsed.body),
-            createdAt: comment.createdAt,
+            createdAt: comment.version.createdAt,
             postSlug: post.slug,
             postTitle: post.title,
           });
@@ -224,7 +224,7 @@ export async function createComment(
 
   return {
     commentId: created.id,
-    createdAt: created.createdAt,
+    createdAt: created.version.createdAt,
     authorType,
     authorName,
   };

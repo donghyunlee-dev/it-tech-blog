@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { signIn } from "@/lib/auth";
 import { verifyLoginToken } from "@/lib/ax-auth/client";
+import { appendQuery, resolveReturnTo } from "@/lib/ax-auth/return-to";
 import {
   createComment,
   getDocumentNotificationMeta,
 } from "@/lib/comments/comments";
 import { notifyCommentAdded } from "@/lib/comments/notify";
 
-export const RETURN_TO_COOKIE = "ax_return_to";
 export const PENDING_COMMENT_COOKIE = "ax_pending_comment";
 
 interface PendingComment {
@@ -17,18 +17,8 @@ interface PendingComment {
   authorName: string;
 }
 
-/** 오픈 리다이렉트 방지 — 우리 서비스 내부의 상대 경로만 허용한다. */
-function resolveReturnTo(request: NextRequest): string {
-  const value = request.cookies.get(RETURN_TO_COOKIE)?.value;
-  if (value && value.startsWith("/") && !value.startsWith("//")) {
-    return value;
-  }
-  return "/";
-}
-
 function appendError(path: string, code: string): string {
-  const separator = path.includes("?") ? "&" : "?";
-  return `${path}${separator}error=${code}`;
+  return appendQuery(path, "error", code);
 }
 
 /**
@@ -136,6 +126,12 @@ async function completePendingComment(
  *
  * Viewer는 댓글 작성 시에만 로그인을 트리거하므로, 로그인 시작 전 CommentSection이
  * 심어 둔 `ax_return_to` 쿠키(원래 보던 게시글 경로)로 돌아간다.
+ *
+ * `login_token`이 아예 없는 경우 두 가지로 갈린다.
+ * - 대기 중인 댓글이 있으면: 이미 타이핑한 댓글을 저장하려던 왕복이 깨진 것이므로, 조용히
+ *   게스트로 전환하면 그 댓글 내용을 잃을 수 있다 — `missing_token` 에러로 명확히 안내한다.
+ * - 없으면: 아직 아무것도 작성하지 않은 순수 로그인 시도가 실패한 것뿐이므로, 오류로 보여주지
+ *   않고 이름/이메일을 입력하는 게스트 작성 화면으로 넘긴다(ax-signin-failed와 동일 원칙).
  */
 export async function GET(request: NextRequest) {
   const loginToken =
@@ -143,14 +139,21 @@ export async function GET(request: NextRequest) {
     request.nextUrl.searchParams.get("loginToken");
 
   const returnTo = resolveReturnTo(request);
+  const pendingComment = readPendingComment(request);
 
   if (!loginToken) {
+    if (pendingComment) {
+      const response = NextResponse.redirect(
+        new URL(appendError(returnTo, "missing_token"), request.url)
+      );
+      response.cookies.delete(PENDING_COMMENT_COOKIE);
+      return response;
+    }
     return NextResponse.redirect(
-      new URL(appendError(returnTo, "missing_token"), request.url)
+      new URL(appendQuery(returnTo, "comment", "guest"), request.url)
     );
   }
 
-  const pendingComment = readPendingComment(request);
   if (pendingComment) {
     return completePendingComment(request, loginToken, pendingComment, returnTo);
   }

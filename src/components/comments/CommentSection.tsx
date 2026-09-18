@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { Button, Card, ColorTag, CommentThread, Input, type Comment as SfoodComment } from "@sfood/ui";
+import { Button, Card, Input, CommentThread, type Comment as SfoodComment } from "@sfood/ui";
 
 interface CommentNode {
   commentId: string;
@@ -18,26 +18,26 @@ interface CommentSectionProps {
   isLoggedIn: boolean;
   sessionEmail: string | null;
   loginUrl: string | null;
-}
-
-interface Identity {
-  name: string;
-  email: string;
-  verified: boolean;
+  /** AX Auth 로그인이 실패해 게스트 작성 화면으로 바로 진입해야 할 때(ax-signin-failed 참고) true. */
+  startAsGuest: boolean;
 }
 
 /**
- * 댓글 작성 프로세스: design-direction.md "댓글 작성 프로세스" 결정을 그대로 따른다.
- * 신원 확인 전에는 댓글 입력창 자체가 존재하지 않는다 — 아래 3개 stage 중
- * 한 번에 하나만 렌더링되며, 이전 stage는 조건부 렌더링으로 실제로 사라진다
- * (CSS로 숨기는 것이 아니다).
+ * 댓글 작성 프로세스(2026-09-18 단순화, design-direction.md 참고).
  *
- * 2026-09-15 전면 도입: 게이트/신원확인 패널은 @sfood/ui의 Card·Button·Input·ColorTag로,
- * 확인 후의 목록+작성창은 CommentThread로 교체했다. CommentThread는 onReply를 넘길 때만
- * 댓글별 답글 UI를 노출하므로(제공하지 않으면 답글 버튼 자체가 숨겨짐), stage가
- * "composer"일 때만 onReply를 넘기는 것만으로 "신원 확인 전엔 답글도 불가"가 자연히 성립한다.
+ * 화면에 "사내 직원"/"외부 방문자" 같은 구분 문구를 노출하지 않는다 — 방문자에게는 그냥
+ * "로그인" 버튼 하나만 보인다. 클릭하면 AX Auth(MS) 로그인을 시도하고, 성공하면 이메일이
+ * 잠긴 채로, 실패하면(토큰 만료·사내 계정 아님 등) 오류 화면 없이 이메일·이름을 직접 입력하는
+ * 동일한 작성 화면으로 넘어간다. 내부적으로는 여전히 `authorType: ms_user | external`을
+ * 구분해 저장하지만(data-spec.md), 그 구분은 화면에 드러나지 않는다.
+ *
+ * 단계는 "gate"(로그인 버튼만) → "compose"(이메일+이름+댓글) 두 가지뿐이다. compose 안에서도
+ * 이메일·이름이 채워지기 전에는 댓글 textarea(CommentThread의 composer) 자체를 렌더링하지
+ * 않는다 — `@sfood/ui`의 CommentThread는 제출 시 자신의 textarea 값을 무조건 비우므로, 만약
+ * textarea를 먼저 보여주고 제출 시점에 이메일/이름을 검증하면 검증 실패 시 이미 입력한 댓글
+ * 내용을 잃게 된다. 아예 준비되기 전에는 textarea를 그리지 않는 방식으로 이 문제를 피한다.
  */
-type Stage = "gate" | "ms-confirm" | "guest-confirm" | "composer";
+type Stage = "gate" | "compose";
 
 const RETURN_TO_COOKIE = "ax_return_to";
 const PENDING_COMMENT_COOKIE = "ax_pending_comment";
@@ -86,17 +86,6 @@ function storePendingComment(draft: PendingCommentDraft): boolean {
   return true;
 }
 
-function MsIcon() {
-  return (
-    <svg viewBox="0 0 23 23" width="15" height="15" aria-hidden="true">
-      <rect x="1" y="1" width="10" height="10" fill="#f25022" />
-      <rect x="12" y="1" width="10" height="10" fill="#7fba00" />
-      <rect x="1" y="12" width="10" height="10" fill="#00a4ef" />
-      <rect x="12" y="12" width="10" height="10" fill="#ffb900" />
-    </svg>
-  );
-}
-
 function countAll(nodes: CommentNode[]): number {
   return nodes.reduce((sum, node) => sum + 1 + countAll(node.replies), 0);
 }
@@ -116,21 +105,21 @@ export function CommentSection({
   isLoggedIn,
   sessionEmail,
   loginUrl,
+  startAsGuest,
 }: CommentSectionProps) {
   const router = useRouter();
   const [comments, setComments] = useState<CommentNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
-  const startAtMsConfirm = isLoggedIn && Boolean(sessionEmail);
-  const [stage, setStage] = useState<Stage>(startAtMsConfirm ? "ms-confirm" : "gate");
-  const [identity, setIdentity] = useState<Identity | null>(null);
-  const [msName, setMsName] = useState(sessionEmail ? sessionEmail.split("@")[0] : "");
-  const [guestName, setGuestName] = useState("");
-  const [guestEmail, setGuestEmail] = useState("");
-  const [guestError, setGuestError] = useState<string | null>(null);
+  const verified = isLoggedIn && Boolean(sessionEmail);
+  const [stage, setStage] = useState<Stage>(verified || startAsGuest ? "compose" : "gate");
+  const [email, setEmail] = useState(verified ? sessionEmail! : "");
+  const [name, setName] = useState(verified ? sessionEmail!.split("@")[0] : "");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [switching, setSwitching] = useState(false);
+
+  const identityReady = verified || (email.trim() !== "" && name.trim() !== "");
 
   async function loadComments() {
     setLoading(true);
@@ -155,18 +144,13 @@ export function CommentSection({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageId]);
 
-  function backToGate() {
-    setIdentity(null);
-    setGuestName("");
-    setGuestEmail("");
-    setGuestError(null);
+  /** 로그인 단계로 되돌아간다 — MS 인증됐던 경우에만 세션을 실제로 정리한다. */
+  async function resetToGate() {
+    const wasVerified = verified;
+    setEmail("");
+    setName("");
     setSubmitError(null);
     setStage("gate");
-  }
-
-  async function switchIdentity() {
-    const wasVerified = identity?.verified ?? false;
-    backToGate();
     if (wasVerified) {
       setSwitching(true);
       try {
@@ -178,31 +162,11 @@ export function CommentSection({
     }
   }
 
-  function confirmMsIdentity() {
-    if (!sessionEmail) return;
-    setIdentity({
-      name: msName.trim() || sessionEmail.split("@")[0],
-      email: sessionEmail,
-      verified: true,
-    });
-    setStage("composer");
-  }
-
-  function confirmGuestIdentity() {
-    const name = guestName.trim();
-    const email = guestEmail.trim();
-    if (!name || !email) {
-      setGuestError("이름과 이메일을 모두 입력해주세요");
-      return;
-    }
-    setGuestError(null);
-    setIdentity({ name, email, verified: false });
-    setStage("composer");
-  }
-
-  async function submitCommentDirect(body: string, parentCommentId?: string) {
-    if (!identity) return;
-
+  async function submitCommentDirect(
+    author: { name: string; email: string; verified: boolean },
+    body: string,
+    parentCommentId?: string
+  ) {
     try {
       const response = await fetch("/api/comments", {
         method: "POST",
@@ -211,8 +175,8 @@ export function CommentSection({
           pageId,
           parentCommentId,
           body,
-          authorName: identity.name,
-          ...(identity.verified ? {} : { authorEmail: identity.email }),
+          authorName: author.name,
+          ...(author.verified ? {} : { authorEmail: author.email }),
         }),
       });
       const data = await response.json();
@@ -225,18 +189,23 @@ export function CommentSection({
     }
   }
 
-  async function postComment(body: string, parentCommentId?: string) {
-    if (!identity) return;
+  async function handleSubmit(body: string, parentCommentId?: string) {
+    // CommentThread는 identityReady일 때만 composer를 그리므로 정상 UI 경로에서는 항상 true다.
+    if (!identityReady) return;
     setSubmitError(null);
+
+    const author = verified
+      ? { name: name.trim() || sessionEmail!.split("@")[0], email: sessionEmail!, verified: true }
+      : { name: name.trim(), email: email.trim(), verified: false };
 
     // MS 로그인 사용자는 댓글을 저장할 때마다 AX Auth를 거쳐 신선한 login_token을 받아야
     // 알림 메일을 보낼 수 있다 — 세션이 이미 있으므로 대부분 화면 깜빡임 없이 왕복된다.
-    if (identity.verified && loginUrl) {
+    if (author.verified && loginUrl) {
       const stored = storePendingComment({
         pageId,
         parentCommentId,
         body,
-        authorName: identity.name,
+        authorName: author.name,
       });
       if (stored) {
         startAxAuthLogin(loginUrl);
@@ -244,7 +213,7 @@ export function CommentSection({
       }
     }
 
-    await submitCommentDirect(body, parentCommentId);
+    await submitCommentDirect(author, body, parentCommentId);
   }
 
   const totalCount = countAll(comments);
@@ -258,90 +227,63 @@ export function CommentSection({
 
       {stage === "gate" && (
         <Card padding="lg" className="comment-gate">
-          <p className="gate-lead">댓글을 남기려면 먼저 작성자를 확인해주세요.</p>
+          <p className="gate-lead">로그인 후 댓글을 남기거나, 비로그인으로 바로 작성할 수 있어요.</p>
           <div className="gate-options">
             {loginUrl && (
               <Button
                 variant="primary"
                 onClick={() => startAxAuthLogin(loginUrl, { clearPendingComment: true })}
               >
-                <MsIcon /> MS 계정으로 인증 (사내 직원)
+                로그인
               </Button>
             )}
-            <Button variant="secondary" onClick={() => setStage("guest-confirm")}>
-              이름으로 계속하기 (외부 방문자)
+            <Button variant="secondary" onClick={() => setStage("compose")}>
+              비로그인
             </Button>
           </div>
         </Card>
       )}
 
-      {stage === "ms-confirm" && sessionEmail && (
-        <Card padding="md" className="identify-panel">
-          <div className="panel-label">사내 인증 완료</div>
-          <div className="identify-fields">
+      {stage === "compose" && (
+        <div className="comment-identity-fields">
+          <div className="identity-field-group">
+            <label className="field-label" htmlFor="comment-email">
+              이메일
+            </label>
             <Input
-              type="text"
-              placeholder="이름"
-              value={msName}
-              onChange={(event) => setMsName(event.target.value)}
-            />
-            <ColorTag variant="success">✓ {sessionEmail} 인증됨</ColorTag>
-          </div>
-          <div className="composer-footer" style={{ borderTop: "none", paddingTop: 0, marginTop: 0 }}>
-            <span className="login-hint">이름은 필요하면 고쳐서 등록할 수 있습니다</span>
-            <span style={{ display: "flex", gap: 8 }}>
-              <Button variant="ghost" size="sm" onClick={backToGate}>
-                취소
-              </Button>
-              <Button variant="primary" size="sm" onClick={confirmMsIdentity}>
-                확인하고 댓글 작성
-              </Button>
-            </span>
-          </div>
-        </Card>
-      )}
-
-      {stage === "guest-confirm" && (
-        <Card padding="md" className="identify-panel">
-          <div className="panel-label">본인 확인</div>
-          <div className="identify-fields">
-            <Input
-              type="text"
-              placeholder="이름"
-              value={guestName}
-              onChange={(event) => setGuestName(event.target.value)}
-            />
-            <Input
+              id="comment-email"
               type="email"
-              placeholder="이메일"
-              value={guestEmail}
-              onChange={(event) => setGuestEmail(event.target.value)}
-              error={Boolean(guestError)}
+              value={email}
+              disabled={verified}
+              placeholder="you@example.com"
+              onChange={(event) => setEmail(event.target.value)}
             />
           </div>
-          <div className="composer-footer" style={{ borderTop: "none", paddingTop: 0, marginTop: 0 }}>
-            <span className="login-hint" style={guestError ? { color: "var(--brand-red)" } : undefined}>
-              {guestError ?? "이름·이메일은 댓글에 그대로 표시됩니다"}
-            </span>
-            <span style={{ display: "flex", gap: 8 }}>
-              <Button variant="ghost" size="sm" onClick={backToGate}>
-                취소
-              </Button>
-              <Button variant="primary" size="sm" onClick={confirmGuestIdentity}>
-                확인하고 댓글 작성
-              </Button>
-            </span>
+          <div className="identity-field-group">
+            <label className="field-label" htmlFor="comment-name">
+              이름
+            </label>
+            <Input
+              id="comment-name"
+              type="text"
+              value={name}
+              placeholder={verified ? sessionEmail!.split("@")[0] : "이름"}
+              onChange={(event) => setName(event.target.value)}
+            />
           </div>
-        </Card>
-      )}
-
-      {stage === "composer" && identity && (
-        <div className="identity-confirmed-bar">
-          <span className="who">{identity.name}</span>
-          <span className="how">{identity.verified ? "· 사내 인증됨" : "· 외부 방문자"}</span>
-          <Button variant="ghost" size="sm" onClick={switchIdentity} disabled={switching}>
-            다른 사용자로
-          </Button>
+          <div className="identity-field-footer">
+            {!identityReady && (
+              <span className="login-hint">이메일과 이름을 입력하면 댓글을 작성할 수 있어요</span>
+            )}
+            <button
+              type="button"
+              className="switch-identity-link"
+              onClick={resetToGate}
+              disabled={switching}
+            >
+              {verified ? "로그아웃" : "로그인"}
+            </button>
+          </div>
         </div>
       )}
 
@@ -356,14 +298,14 @@ export function CommentSection({
       ) : (
         <CommentThread
           comments={sfoodComments}
-          showComposer={stage === "composer"}
+          showComposer={stage === "compose" && identityReady}
           composerPlaceholder="댓글을 남겨보세요"
           submitLabel="댓글 등록"
           emptyMessage={loadError ? "댓글 목록을 확인할 수 없습니다." : "아직 댓글이 없습니다."}
-          onSubmit={stage === "composer" ? (body: string) => postComment(body) : undefined}
+          onSubmit={stage === "compose" && identityReady ? (body: string) => handleSubmit(body) : undefined}
           onReply={
-            stage === "composer"
-              ? (commentId: string, body: string) => postComment(body, commentId)
+            stage === "compose" && identityReady
+              ? (commentId: string, body: string) => handleSubmit(body, commentId)
               : undefined
           }
         />
