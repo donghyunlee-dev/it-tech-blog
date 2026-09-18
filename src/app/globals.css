@@ -457,6 +457,10 @@ a {
    docs/tasks/viewer-publish-metadata-fix/result.md 참고) 관련 CSS도 함께 제거했다. */
 
 .article-body {
+  /* .article-layout의 그리드 컬럼(680px) 안에서 "auto" 너비가 항상 그 컬럼을 꽉 채워주지는
+     않아(실측 결과 318px로 줄어드는 경우가 있었음) width:100%로 명시한다. max-width는
+     .no-toc(그리드 없이 단독 렌더링)일 때도 680px를 넘지 않도록 그대로 남긴다. */
+  width: 100%;
   max-width: 680px;
   margin: 0 auto;
   font-size: 16px;
