@@ -19,7 +19,6 @@ export function RecentCommentsSidebar({ items }: { items: RecentCommentItem[] })
   return (
     <aside className="sidebar">
       <h2 className="section-heading">최근 댓글</h2>
-      <p className="sidebar-intro">랭킹이 아니라, 지금 오가고 있는 이야기를 보여드립니다.</p>
       <ul className="recent-list">
         {items.map((item) => (
           <li key={item.commentId}>
