@@ -89,3 +89,24 @@ spec.md의 P2 두 건과 열려 있던 정리 항목을 처리했다.
   - 표: `th` 배경이 `--surface-muted`로 확인, 짝수 행 `td` 배경이 `rgba(0,0,0,0.02)`로 확인, table 자체가 `display:block`/`overflow-x:auto`로 확인.
 - 이번에도 화면 스크린샷은 공유 dev 서버 간섭으로 실패했으나(다른 세션과 동시 사용), computed style 검증으로 실제 적용을 확인했다.
 - `grep`으로 `.pullquote`가 `.tsx`/`.ts` 어디에서도 참조되지 않음을 재확인한 뒤 삭제.
+
+---
+
+# result — Phase 4 (중복 CSS 정리)
+
+## 요약
+
+spec.md의 P3(마지막 항목)를 처리했다. `.viewer-code`가 `.article-body pre`와 배경/라운드/패딩/오버플로우/폰트크기를 완전히 동일하게 중복 정의하고 있었다 — `.article-body pre`는 태그 선택자라 클래스 유무와 무관하게 모든 코드 블록에 이미 걸리므로, `.viewer-code`의 자체 스타일은 항상 무의미했다. 중복 규칙만 삭제했다(마크업의 `viewer-code` 클래스 자체는 `stripShikiOwnStyle`이 `.shiki`와 함께 계속 참조하므로 그대로 둠).
+
+## 변경 파일
+
+- `src/app/globals.css` — 독립된 `.viewer-code` 규칙 삭제, 상단 주석 갱신.
+
+## 검증
+
+- `tsc`/`eslint`/`npm run build` 통과.
+- 브라우저에서 코드 블록 3개의 `getComputedStyle`(배경/패딩/라운드) 확인 — 정리 전후 값 동일(`rgb(244,244,244)`/`16px`/`14px`), 회귀 없음.
+
+## Phase 1~4 전체 마무리
+
+spec.md/plan.md에서 계획한 4단계(이미지 복구, 코드 강조 / 펼치기 매크로, 콜아웃 색상 / 인용문, 표 스타일 / 중복 정리)를 모두 반영했다. 남은 것은 각 Phase PR의 병합 체인을 main까지 끝까지 연결하는 것과, 마지막으로 "컴포넌트 테스트" 문서를 처음부터 끝까지 육안으로 재확인하는 것이다.
