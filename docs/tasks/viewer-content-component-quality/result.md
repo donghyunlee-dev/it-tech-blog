@@ -34,4 +34,33 @@ plan.md는 첨부 다운로드 인증 방식을 "조사 필요"로 남겨뒀는�
 
 - 첨부 조회 2회 왕복을 줄이기 위한 캐싱(예: 페이지별 첨부 목록을 ISR 캐시와 함께 재사용).
 - shiki 하이라이팅이 실제 code 매크로 문서에서 육안으로 잘 보이는지, 별도 dev 서버 단독 환경에서 한 번 더 확인.
-- Phase 2(pending): 펼치기(expand) 매크로 → `<details>`, 콜아웃 4종 색상 구분 — spec.md/plan.md에 계획만 남겨두고 이번 커밋에는 포함하지 않았다(범위 유지).
+
+---
+
+# result — Phase 2 (펼치기 매크로 + 콜아웃 색상 구분)
+
+## 요약
+
+spec.md의 P1 두 건을 처리했다.
+
+1. **펼치기(expand) 매크로**: `MACRO_REGEX`에 `expand`를 추가하고 `<details class="viewer-expand"><summary>{title}</summary>{내용}</details>`로 변환 — 기본 닫힘 상태, 클릭으로 펼쳐진다. `title` 파라미터가 없으면 "더 보기"로 대체.
+2. **콜아웃 4종 색상 구분**: info(파랑)/tip(초록)/warning(기존 브랜드레드 유지)에 각각 accent 색 + 아이콘을 주고, note는 중립 회색을 유지했다(아래 "디자인 판단" 참고).
+
+## 변경 파일
+
+- `src/lib/viewer/converter.ts` — `MACRO_REGEX`에 `expand` 추가, `convertMacros`에 expand 분기 추가.
+- `src/app/globals.css` — `.viewer-panel-info`/`-tip`/`-warning`에 accent 색상(`border-left`+아이콘 `::before`), `.viewer-expand`(+`summary`) 스타일 신규.
+
+## 디자인 판단 (design-system.md 준수 확인)
+
+`@sfood/ui` 토큰 패키지(`node_modules/@sfood/ui/tokens/base.css`)를 확인한 결과 옅은 배경 틴트 토큰(`-50`/`-100` 스케일)이 파랑(`--blue-50`/`--blue-100`)에만 있고 초록·노랑 계열에는 없었다. 하드코딩 hex로 임의의 틴트색을 새로 만드는 대신, 상태 토큰(`--color-info`, `--color-success`)을 `color-mix()`로 옅게 섞어 배경을 만들어 토큰 체계 안에 머물렀다. `note`(참고)는 대응하는 상태 토큰이 없고 Confluence 자체에도 뚜렷한 색 관례가 없어, 새 색을 임의로 정하기보다 기존 중립 회색을 유지하고 아이콘(📝)만 추가해 최소한으로 구분했다 — 필요하면 디자인 승인 후 별도 색을 배정할 수 있다.
+
+## 검증
+
+- `tsc`/`eslint`/`npm run build` 통과.
+- converter.ts 직접 호출 단위 확인: expand(제목 있음/없음), info/note/tip/warning 4종 모두 예상한 HTML 출력.
+- 브라우저(공유 dev 서버, 컴포넌트 테스트 문서)에서 실측:
+  - info/warning/note 패널 3종의 `background-color`/`border-left-color`가 서로 다름을 `getComputedStyle`로 확인.
+  - `::before` 아이콘 콘텐츠(ℹ️/⚠️/📝) 정상 렌더링 확인.
+  - "컴포넌트 테스트" 문서에는 실제 expand 매크로가 없어, `<details class="viewer-expand">`를 임시로 주입해 기본 닫힘 → 클릭 시 펼쳐짐 → 스타일(라운드 14px, summary flex) 정상 동작 확인.
+- tip(팁) 콜아웃과 실제 expand 매크로는 이 문서에 없어 육안 확인은 못 함 — converter 단위 테스트로만 확인.
