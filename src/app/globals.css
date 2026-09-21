@@ -145,13 +145,19 @@ a {
   border-radius: 2px;
 }
 
-/* 상세 화면용 슬림 헤더 */
+/* 상세 화면용 슬림 헤더 — 글을 읽다가 목록으로 돌아가기 어렵다는 피드백(2026-09-21)으로
+   상단에 고정한다. .wrap 안의 평범한 자식이라 폭은 본문 컬럼과 같고(전체 화면 폭이 아님),
+   배경을 불투명하게 채워 스크롤되는 본문이 뒤에서 비치지 않게 한다. */
 .slim-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 16px 0;
   border-bottom: 1px solid var(--border-hairline);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--surface);
 }
 
 .slim-header .back-link {
@@ -502,12 +508,14 @@ a {
   letter-spacing: -0.2px;
   line-height: 1.4;
   margin: 44px 0 18px;
+  scroll-margin-top: 84px;
 }
 
 .article-body h3 {
   font-size: 19px;
   font-weight: 700;
   line-height: 1.4;
+  scroll-margin-top: 84px;
   margin: 36px 0 14px;
 }
 
@@ -664,9 +672,12 @@ a {
   width: 100%;
 }
 
+/* 고정 헤더(.slim-header, 69px) 아래에서 시작하도록 여유를 둔다 — 헤더와 같은 84px을
+   h2/h3의 scroll-margin-top(아래 .article-body h2/h3)에도 똑같이 줘서, 앵커 점프·TOC 클릭
+   시 헤딩이 고정 헤더에 가리지 않게 맞춘다(2026-09-21). */
 .toc {
   position: sticky;
-  top: 110px;
+  top: 84px;
 }
 
 .toc .kicker {
