@@ -7,7 +7,7 @@ import { getAxAuthLoginUrl } from "@/lib/ax-auth/client";
 import { CommentSection } from "@/components/comments/CommentSection";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
-import { TableOfContents } from "@/components/posts/TableOfContents";
+import { TableOfContents, MobileTableOfContents } from "@/components/posts/TableOfContents";
 
 interface PostPageProps {
   params: Promise<{ slug: string }>;
@@ -147,6 +147,8 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
                   </div>
                 </div>
               </header>
+
+              <MobileTableOfContents headings={post.headings} />
 
               {post.heroImageUrl && (
                 <div className="article-hero">

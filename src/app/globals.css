@@ -593,10 +593,14 @@ a {
    히어로와 같은 원칙으로 박스·배경 없이 얇은 선 + 텍스트로만 구성한다
    (docs/guide/mockups/toc-sidebar-proposal.html 참고). 헤딩이 없는 글은 .no-toc가 붙어
    본문만 중앙 정렬된 단일 컬럼으로 되돌아간다.
-   관련 글/댓글 영역도 같은 이 그리드(.article-layout[.no-toc])로 감싸서 첫 번째 컬럼(680px)에
-   배치한다 — 각자 max-width:680px;margin:auto로 독립적으로 중앙 정렬하면, 목차가 붙어 920px
-   기준으로 정렬되는 본문(.article-main)과 좌측이 최대 120px(목차 컬럼 폭+간격) 어긋난다.
-   같은 그리드를 재사용하면 폭 기준과 무관하게 좌측 정렬이 항상 일치한다(2026-09-18). */
+   관련 글/댓글 영역도 같은 이 그리드(.article-layout[.no-toc])로 감싸서 첫 번째 컬럼(936px)에
+   배치한다 — 각자 max-width:936px;margin:auto로 독립적으로 중앙 정렬하면, 목차가 붙어 1280px
+   기준으로 정렬되는 본문(.article-main)과 좌측이 최대 172px(목차 컬럼 폭+간격의 절반만큼,
+   .wrap 안에서 두 값이 서로 다른 폭으로 각자 중앙정렬되며 생김) 어긋난다.
+   같은 그리드를 재사용하면 폭 기준과 무관하게 좌측 정렬이 항상 일치한다(2026-09-18). .no-toc도
+   같은 max-width(1280px)를 유지해야 .wrap 안에서의 중앙정렬 오프셋이 동일해진다 — 컬럼 자체는
+   minmax(0,936px) 하나뿐이라 콘텐츠 폭(936px)으로 줄어들고 grid 왼쪽 끝에 붙으므로, 오른쪽에
+   남는 여백은 시각적으로 드러나지 않는다. */
 .article-layout {
   display: grid;
   grid-template-columns: minmax(0, 936px) 280px;
@@ -608,7 +612,7 @@ a {
 
 .article-layout.no-toc {
   grid-template-columns: minmax(0, 936px);
-  max-width: 936px;
+  max-width: 1280px;
 }
 
 /* 그리드 컬럼(680px)의 직접 자식은 width:auto가 항상 그 컬럼을 꽉 채워주지는 않는다
@@ -685,6 +689,78 @@ a {
 .toc-list li.active a {
   color: var(--brand-red);
   font-weight: 700;
+}
+
+/* ---------- 목차(좁은 화면용, doc 스타일) — 사이드바 목차(.toc)는 1340px 이하에서 자리가
+   없어 완전히 숨는다(아래 @media (max-width:1340px) 참고). 그 화면에서는 대신 제목 바로
+   아래, 본문보다 먼저 이 카드형 목차를 보여준다. 얇은 선만 쓰는 사이드바와 구분되도록 배경·
+   그림자·번호 매기기를 쓴 문서형(Notion/Confluence류) 목차로 디자인한다(2026-09-21). */
+.toc-inline {
+  display: none;
+  margin: 0 0 32px;
+  padding: 18px 22px;
+  background: var(--surface-muted);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.toc-inline-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.toc-inline-summary::-webkit-details-marker {
+  display: none;
+}
+
+.toc-inline-summary::after {
+  content: "\25BE";
+  color: var(--text-tertiary);
+  transition: transform 0.15s ease;
+}
+
+.toc-inline[open] .toc-inline-summary::after {
+  transform: rotate(180deg);
+}
+
+.toc-inline-count {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.toc-inline-list {
+  list-style: decimal;
+  margin: 16px 0 0;
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toc-inline-list li.sub {
+  list-style: none;
+  margin-left: 4px;
+}
+
+.toc-inline-list a {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.toc-inline-list li.sub a {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.toc-inline-list a:hover {
+  color: var(--brand-red);
 }
 
 /* ---------- 시그니처 ④: 풀쿼트/콜아웃 (Confluence 정보 패널 컨버터 결과물) ---------- */
@@ -1125,15 +1201,26 @@ footer.site-footer {
 /* 본문 컬럼이 936px, 목차 280px, 간격 64px로(2026-09-18 사내 검토 가이드 반영) 그리드 전체
    폭이 1280px다. .wrap(1340px) 안에서 이만큼의 폭이 나오려면 뷰포트가 최소
    1280+48(.wrap 좌우 패딩)=1328px 이상이어야 한다 — 그보다 좁은 화면에서는 목차가 놓일
-   자리가 없으므로 본문만 남기고 숨긴다. */
+   자리가 없으므로 본문만 남기고 숨긴다. 사이드바 목차 대신 본문 위에 카드형 목차(.toc-inline,
+   2026-09-21)를 보여준다. .no-toc는 ".article-layout.no-toc"가 ".article-layout"보다
+   선택자 우선순위가 높아 이 블록의 max-width만으로는 덮어써지지 않으므로 별도로 명시한다
+   — 안 그러면 이 구간(860~1340px)에서 목차 있는 글과 없는 글의 폭 기준이 다시 어긋난다. */
 @media (max-width: 1340px) {
   .article-layout {
     grid-template-columns: 1fr;
     max-width: 936px;
   }
 
+  .article-layout.no-toc {
+    max-width: 936px;
+  }
+
   .toc {
     display: none;
+  }
+
+  .toc-inline {
+    display: block;
   }
 }
 
