@@ -8,6 +8,17 @@ const PANEL_LABEL: Record<string, string> = {
   tip: "팁",
 };
 
+/** Confluence 코드 매크로 language 파라미터 → shiki 번들 언어 id. 매핑에 없으면 강조 없이 escape만 한다. */
+const SHIKI_LANGUAGE_ALIASES: Record<string, string> = {
+  js: "javascript",
+  ts: "typescript",
+  sh: "bash",
+  shell: "bash",
+  yml: "yaml",
+  none: "text",
+  plain: "text",
+};
+
 function extractRichTextBody(macroBody: string): string {
   const match = macroBody.match(
     /<ac:rich-text-body>([\s\S]*?)<\/ac:rich-text-body>/
@@ -22,21 +33,87 @@ function extractCodeBody(macroBody: string): string {
   return match ? match[1] : "";
 }
 
+function extractMacroParam(macroBody: string, name: string): string | null {
+  const match = macroBody.match(
+    new RegExp(`<ac:parameter ac:name="${name}">([\\s\\S]*?)</ac:parameter>`)
+  );
+  return match ? match[1].trim() : null;
+}
+
 function escapeHtml(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function convertMacros(storageHtml: string): string {
-  return storageHtml.replace(MACRO_REGEX, (_match, name: string, body: string) => {
+/** shiki가 생성하는 <pre class="shiki" style="background-color:...;color:...">에서 자체 배경/글자색
+ *  스타일만 걷어낸다 — 배경·패딩·라운드는 계속 .article-body pre/.viewer-code(globals.css)가
+ *  맡고, shiki는 토큰별 <span style="color:...">만 담당하게 해 기존 코드 블록 디자인과 충돌하지
+ *  않게 한다. */
+function stripShikiOwnStyle(shikiHtml: string): string {
+  // shiki는 테마 이름까지 클래스에 붙여 class="shiki github-light"처럼 내보낸다 — 정확히
+  // "shiki"만 매칭하면 놓친다.
+  return shikiHtml.replace(/<pre class="shiki[^"]*"[^>]*>/, '<pre class="viewer-code shiki">');
+}
+
+async function highlightCode(code: string, language: string | null): Promise<string> {
+  const lang = language ? SHIKI_LANGUAGE_ALIASES[language] ?? language : "text";
+
+  try {
+    const { codeToHtml } = await import("shiki");
+    const html = await codeToHtml(code, { lang, theme: "github-light" });
+    return stripShikiOwnStyle(html);
+  } catch {
+    // shiki가 모르는 언어이거나 하이라이팅에 실패하면 기존처럼 무강조 코드 블록으로 대체한다.
+    return `<pre class="viewer-code"><code>${escapeHtml(code)}</code></pre>`;
+  }
+}
+
+async function convertMacros(storageHtml: string): Promise<string> {
+  const matches = [...storageHtml.matchAll(MACRO_REGEX)];
+  let result = storageHtml;
+
+  for (const match of matches) {
+    const [fullMatch, name, body] = match;
+
+    let replacement: string;
     if (name === "code") {
-      return `<pre class="viewer-code"><code>${escapeHtml(extractCodeBody(body))}</code></pre>`;
+      const language = extractMacroParam(body, "language");
+      replacement = await highlightCode(extractCodeBody(body), language);
+    } else {
+      replacement = `<div class="viewer-panel viewer-panel-${name}"><strong>${PANEL_LABEL[name]}</strong>${extractRichTextBody(body)}</div>`;
     }
-    return `<div class="viewer-panel viewer-panel-${name}"><strong>${PANEL_LABEL[name]}</strong>${extractRichTextBody(body)}</div>`;
-  });
+
+    result = result.replace(fullMatch, replacement);
+  }
+
+  return result;
 }
 
 function convertTables(html: string): string {
   return html.replace(/<table(?![^>]*class=)/g, '<table class="viewer-table"');
+}
+
+/** Confluence 첨부 이미지(ac:image + ri:attachment)와 외부 URL 이미지(ac:image + ri:url)를 <img>로
+ *  바꾼다. 첨부 이미지는 Confluence 다운로드가 인증을 요구해 브라우저가 직접 못 받아오므로,
+ *  서버가 인증을 대신 처리하는 프록시 라우트(/api/attachments/[pageId]/[filename])를 가리키게
+ *  한다(src/app/api/attachments/[pageId]/[filename]/route.ts 참고). stripUnmappedMacros보다
+ *  먼저 실행해야 한다 — 그쪽이 먼저 돌면 ac:image/ri:attachment 태그가 정보 없이 사라진다. */
+function convertImages(html: string, pageId: string): string {
+  return html.replace(/<ac:image[^>]*>([\s\S]*?)<\/ac:image>/g, (fullMatch, inner: string) => {
+    const attachmentMatch = inner.match(/<ri:attachment ri:filename="([^"]+)"/);
+    const urlMatch = inner.match(/<ri:url ri:value="([^"]+)"/);
+    const altMatch = fullMatch.match(/<ac:image[^>]*\sac:alt="([^"]*)"/);
+    const alt = altMatch ? escapeHtml(altMatch[1]) : "";
+
+    if (attachmentMatch) {
+      const src = `/api/attachments/${pageId}/${encodeURIComponent(attachmentMatch[1])}`;
+      return `<img src="${src}" alt="${alt}" loading="lazy" />`;
+    }
+    if (urlMatch) {
+      return `<img src="${escapeHtml(urlMatch[1])}" alt="${alt}" loading="lazy" />`;
+    }
+    // 첨부/외부 URL 어느 쪽도 못 찾으면(예: 삭제된 첨부) 빈 alt 텍스트만 남기고 이미지는 생략한다.
+    return "";
+  });
 }
 
 /** 위에서 매핑하지 못한 ac:/ri: 네임스페이스 태그를 제거하되, 내부 리치 텍스트는 유지한다. */
@@ -113,10 +190,16 @@ export function extractHeadings(html: string): TocHeading[] {
   return headings;
 }
 
-/** Confluence storage format(XHTML)을 Viewer용 웹 HTML로 변환한다(prd.md "Confluence 컴포넌트 컨버터" 기능). */
-export function convertStorageToHtml(storageHtml: string): string {
-  const withMacros = convertMacros(storageHtml);
-  const withTables = convertTables(withMacros);
+/** Confluence storage format(XHTML)을 Viewer용 웹 HTML로 변환한다(prd.md "Confluence 컴포넌트 컨버터" 기능).
+ *  코드 매크로 하이라이팅(shiki)이 비동기라 전체가 async다. pageId는 첨부 이미지 프록시 URL을
+ *  만드는 데 쓴다(convertImages 참고). */
+export async function convertStorageToHtml(
+  storageHtml: string,
+  pageId: string
+): Promise<string> {
+  const withMacros = await convertMacros(storageHtml);
+  const withImages = convertImages(withMacros, pageId);
+  const withTables = convertTables(withImages);
   const withoutUnmapped = stripUnmappedMacros(withTables);
   const withHeadingIds = injectHeadingIds(withoutUnmapped);
   return sanitize(withHeadingIds);

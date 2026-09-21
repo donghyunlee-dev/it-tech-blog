@@ -147,7 +147,7 @@ async function buildPostDetail(
 ): Promise<PublishedPostDetail> {
   const { page, viewerMeta, publishedAt, title, tags } = entries[matchIndex];
   const fullPage = await getPage(page.id);
-  const html = convertStorageToHtml(fullPage.body?.storage.value ?? "");
+  const html = await convertStorageToHtml(fullPage.body?.storage.value ?? "", page.id);
 
   const relatedPosts = entries
     .filter((_entry, index) => index !== matchIndex)

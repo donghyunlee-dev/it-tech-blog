@@ -97,6 +97,62 @@ export async function getPage(pageId: string): Promise<ConfluencePage> {
   );
 }
 
+export interface ConfluenceAttachment {
+  id: string;
+  title: string;
+  /** `/rest/api/content/{pageId}/child/attachment/{id}/download` 형태의 루트 상대 경로.
+   *  실측 결과(2026-09-21) `/download/attachments/{pageId}/{filename}` 같은 고전 경로는 이
+   *  인스턴스에서 더 이상 동작하지 않아, 반드시 이 필드를 그대로 써야 한다. */
+  downloadLink: string;
+  mediaType: string;
+}
+
+/** 문서에 달린 첨부파일 목록을 페이지네이션을 따라가며 전부 조회한다(첨부 이미지 표시용). */
+export async function listPageAttachments(
+  pageId: string
+): Promise<ConfluenceAttachment[]> {
+  const attachments: ConfluenceAttachment[] = [];
+  let cursor: string | null = null;
+
+  do {
+    const query: string = cursor
+      ? cursor
+      : `/api/v2/pages/${pageId}/attachments?limit=100`;
+    const page = await confluenceRequest<{
+      results: ConfluenceAttachment[];
+      _links: { next?: string };
+    }>(query);
+
+    attachments.push(...page.results);
+    cursor = page._links.next ?? null;
+  } while (cursor);
+
+  return attachments;
+}
+
+/** 첨부 이미지 원본 다운로드 — 바이너리 응답이라 JSON을 기대하는 confluenceRequest를 쓸 수 없어
+ *  직접 fetch한다. 응답을 그대로 스트리밍할 수 있도록 raw Response를 돌려준다(호출부:
+ *  src/app/api/attachments/[pageId]/[filename]/route.ts). Confluence 첨부 다운로드는 페이지
+ *  조회와 같은 Basic Auth가 필요해 브라우저가 직접 요청할 수 없다.
+ *  converter.ts는 ri:filename만 알고 첨부 id는 모르므로, 먼저 첨부 목록에서 파일명으로 찾아
+ *  downloadLink를 얻은 뒤에야 실제 다운로드를 요청할 수 있다(요청당 업스트림 호출 2회). */
+export async function fetchConfluenceAttachment(
+  pageId: string,
+  filename: string
+): Promise<Response> {
+  const { baseUrl, email, apiToken } = getConfluenceConfig();
+  const attachments = await listPageAttachments(pageId);
+  const attachment = attachments.find((item) => item.title === filename);
+
+  if (!attachment) {
+    return new Response(null, { status: 404 });
+  }
+
+  return fetch(`${baseUrl}${attachment.downloadLink}`, {
+    headers: { Authorization: buildAuthHeader(email, apiToken) },
+  });
+}
+
 // ── Content Properties (읽기 전용) ────────────────────────
 
 export interface ConfluencePageProperty<T = unknown> {
