@@ -47,11 +47,14 @@ function escapeHtml(value: string): string {
 /** shiki가 생성하는 <pre class="shiki" style="background-color:...;color:...">에서 자체 배경/글자색
  *  스타일만 걷어낸다 — 배경·패딩·라운드는 계속 .article-body pre/.viewer-code(globals.css)가
  *  맡고, shiki는 토큰별 <span style="color:...">만 담당하게 해 기존 코드 블록 디자인과 충돌하지
- *  않게 한다. */
-function stripShikiOwnStyle(shikiHtml: string): string {
-  // shiki는 테마 이름까지 클래스에 붙여 class="shiki github-light"처럼 내보낸다 — 정확히
+ *  않게 한다. language는 wrapCodeBlocks가 코드 창 헤더의 언어 라벨을 만드는 데 쓴다. */
+function stripShikiOwnStyle(shikiHtml: string, language: string): string {
+  // shiki는 테마 이름까지 클래스에 붙여 class="shiki github-dark"처럼 내보낸다 — 정확히
   // "shiki"만 매칭하면 놓친다.
-  return shikiHtml.replace(/<pre class="shiki[^"]*"[^>]*>/, '<pre class="viewer-code shiki">');
+  return shikiHtml.replace(
+    /<pre class="shiki[^"]*"[^>]*>/,
+    `<pre class="viewer-code shiki" data-lang="${escapeHtml(language)}">`
+  );
 }
 
 async function highlightCode(code: string, language: string | null): Promise<string> {
@@ -59,12 +62,39 @@ async function highlightCode(code: string, language: string | null): Promise<str
 
   try {
     const { codeToHtml } = await import("shiki");
-    const html = await codeToHtml(code, { lang, theme: "github-light" });
-    return stripShikiOwnStyle(html);
+    // 코드 블록을 콜아웃/본문과 뚜렷이 구분되는 다크 톤 "코드 창"으로 디자인한다(2026-09-21,
+    // 기술 블로그에 안 맞는다는 피드백) — github-dark 토큰 색이 어두운 배경 기준으로 맞춰져
+    // 있어, 이 배경(globals.css .article-body pre)도 그와 맞는 어두운 톤으로 바꿔야 한다.
+    const html = await codeToHtml(code, { lang, theme: "github-dark" });
+    return stripShikiOwnStyle(html, language ?? "");
   } catch {
-    // shiki가 모르는 언어이거나 하이라이팅에 실패하면 기존처럼 무강조 코드 블록으로 대체한다.
-    return `<pre class="viewer-code"><code>${escapeHtml(code)}</code></pre>`;
+    // shiki가 모르는 언어이거나 하이라이팅에 실패하면 무강조 코드 블록으로 대체한다(언어 라벨은
+    // 그대로 남겨 코드 창 디자인은 유지된다).
+    return `<pre class="viewer-code" data-lang="${escapeHtml(language ?? "")}"><code>${escapeHtml(code)}</code></pre>`;
   }
+}
+
+/** 매크로 유무·언어 정보 유무와 무관하게 모든 <pre>를 언어 라벨 + 복사 버튼이 있는 "코드 창"
+ *  안에 감싼다. Editor 네이티브 <pre><code>(매크로를 거치지 않아 하이라이팅도, data-lang도
+ *  없음)도 똑같이 감싸 코드 블록끼리 디자인이 갈리지 않게 한다 — 실제로 "컴포넌트 테스트"
+ *  문서의 코드 블록은 전부 이 네이티브 케이스였다. 복사 버튼 클릭은 CodeCopyButtons.tsx(클라
+ *  이언트 컴포넌트)가 document 레벨 이벤트 위임으로 처리한다 — .article-body는
+ *  dangerouslySetInnerHTML 정적 문자열이라 여기서 React 핸들러를 못 붙인다. */
+function wrapCodeBlocks(html: string): string {
+  return html.replace(/<pre([^>]*)>([\s\S]*?)<\/pre>/g, (_match, attrs: string, inner: string) => {
+    const lang = attrs.match(/data-lang="([^"]*)"/)?.[1]?.trim();
+    const label = lang ? lang.toUpperCase() : "CODE";
+
+    return (
+      `<div class="code-block">` +
+      `<div class="code-block-header">` +
+      `<span class="code-block-lang">${label}</span>` +
+      `<button type="button" class="code-block-copy" data-code-copy>복사</button>` +
+      `</div>` +
+      `<pre${attrs}>${inner}</pre>` +
+      `</div>`
+    );
+  });
 }
 
 async function convertMacros(storageHtml: string): Promise<string> {
@@ -205,5 +235,6 @@ export async function convertStorageToHtml(
   const withTables = convertTables(withImages);
   const withoutUnmapped = stripUnmappedMacros(withTables);
   const withHeadingIds = injectHeadingIds(withoutUnmapped);
-  return sanitize(withHeadingIds);
+  const withCodeChrome = wrapCodeBlocks(withHeadingIds);
+  return sanitize(withCodeChrome);
 }

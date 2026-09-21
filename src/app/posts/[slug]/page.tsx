@@ -8,6 +8,7 @@ import { CommentSection } from "@/components/comments/CommentSection";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { TableOfContents, MobileTableOfContents } from "@/components/posts/TableOfContents";
+import { CodeCopyButtons } from "@/components/posts/CodeCopyButtons";
 
 interface PostPageProps {
   params: Promise<{ slug: string }>;
@@ -165,6 +166,8 @@ export default async function PostPage({ params, searchParams }: PostPageProps) 
             <TableOfContents headings={post.headings} />
           </div>
         </article>
+
+        <CodeCopyButtons />
 
         {post.relatedPosts.length > 0 && (
           <div className={`article-layout${post.headings.length > 0 ? "" : " no-toc"}`}>
