@@ -64,3 +64,28 @@ spec.md의 P1 두 건을 처리했다.
   - `::before` 아이콘 콘텐츠(ℹ️/⚠️/📝) 정상 렌더링 확인.
   - "컴포넌트 테스트" 문서에는 실제 expand 매크로가 없어, `<details class="viewer-expand">`를 임시로 주입해 기본 닫힘 → 클릭 시 펼쳐짐 → 스타일(라운드 14px, summary flex) 정상 동작 확인.
 - tip(팁) 콜아웃과 실제 expand 매크로는 이 문서에 없어 육안 확인은 못 함 — converter 단위 테스트로만 확인.
+
+---
+
+# result — Phase 3 (인용문 강화 + 표 스타일 + 죽은 코드 정리)
+
+## 요약
+
+spec.md의 P2 두 건과 열려 있던 정리 항목을 처리했다.
+
+1. **인용문 강화**: `.article-body blockquote`가 회색 얇은 선만 있던 것을, 죽은 `.pullquote` 클래스가 갖고 있던 승인된 시그니처 스타일(브랜드레드 좌측 3px 선, 20px/600 굵기)을 그대로 옮겨 적용했다. 새 디자인을 만들지 않고 이미 승인된 값을 재사용했다.
+2. **표 스타일**: 헤더 배경 강조(`--surface-muted`), 짝수 행 줄무늬, `display:block + overflow-x:auto`로 좁은 화면에서 표만 가로 스크롤되게 했다(컨버터가 래퍼 `<div>`를 만들지 않으므로 마크업 변경 없이 CSS만으로 처리).
+3. **죽은 코드 정리**: `converter.ts`가 한 번도 만든 적 없는 `.pullquote` 클래스를 삭제했다(위 1번에서 그 스타일을 blockquote로 흡수했으므로).
+
+## 변경 파일
+
+- `src/app/globals.css` — `.article-body blockquote`/`blockquote p` 스타일 교체, `.pullquote` 삭제, `.viewer-table`에 헤더/줄무늬/가로스크롤 스타일 추가.
+
+## 검증
+
+- `tsc`/`eslint`/`npm run build` 통과.
+- 브라우저(컴포넌트 테스트 문서)에서 `getComputedStyle`로 실측:
+  - blockquote: `border-left-color` 브랜드레드, `font-size` 20px, `font-weight` 600 확인.
+  - 표: `th` 배경이 `--surface-muted`로 확인, 짝수 행 `td` 배경이 `rgba(0,0,0,0.02)`로 확인, table 자체가 `display:block`/`overflow-x:auto`로 확인.
+- 이번에도 화면 스크린샷은 공유 dev 서버 간섭으로 실패했으나(다른 세션과 동시 사용), computed style 검증으로 실제 적용을 확인했다.
+- `grep`으로 `.pullquote`가 `.tsx`/`.ts` 어디에서도 참조되지 않음을 재확인한 뒤 삭제.
