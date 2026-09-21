@@ -579,10 +579,13 @@ a {
   font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 }
 
-/* Confluence "코드" 매크로는 .viewer-code 클래스가 붙은 <pre>로 변환되지만(converter.ts),
-   Editor 자체 코드 블록은 클래스 없는 순정 <pre><code>로 나오는 경우도 실제로 확인됐다
-   (2026-09-16, "컴포넌트 테스트" 문서). 둘 다 같은 코드 블록으로 보이도록 <pre> 자체에 스타일을
-   주고, 내부 <code>의 인라인 스타일(위 규칙)은 되돌린다. */
+/* Confluence "코드" 매크로는 .viewer-code(+ shiki 하이라이팅 시 .shiki도 함께) 클래스가 붙은
+   <pre>로 변환되지만(converter.ts), Editor 자체 코드 블록은 클래스 없는 순정 <pre><code>로
+   나오는 경우도 실제로 확인됐다(2026-09-16, "컴포넌트 테스트" 문서). 클래스 유무와 무관하게
+   태그 선택자로 걸어 둘 다 같은 코드 블록으로 보이게 한다 — 예전엔 .viewer-code 클래스에도
+   똑같은 배경/패딩/라운드를 중복 정의해뒀었는데(어차피 <pre>는 전부 여기 걸리므로 항상
+   무의미했다), 이 규칙 하나로 통합했다(2026-09-21 정리). 내부 <code>의 인라인 스타일(위
+   규칙)은 되돌린다. */
 .article-body pre {
   background: var(--surface-muted);
   border-radius: var(--radius-badge);
@@ -1288,14 +1291,6 @@ footer.site-footer {
 
 .viewer-content table.viewer-table tbody tr:nth-child(even) td {
   background: rgba(0, 0, 0, 0.02);
-}
-
-.viewer-code {
-  background: var(--surface-muted);
-  border-radius: var(--radius-badge);
-  padding: 16px;
-  overflow-x: auto;
-  font-size: 0.88rem;
 }
 
 @media (max-width: 860px) {
