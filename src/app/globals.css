@@ -691,6 +691,78 @@ a {
   font-weight: 700;
 }
 
+/* ---------- 목차(좁은 화면용, doc 스타일) — 사이드바 목차(.toc)는 1340px 이하에서 자리가
+   없어 완전히 숨는다(아래 @media (max-width:1340px) 참고). 그 화면에서는 대신 제목 바로
+   아래, 본문보다 먼저 이 카드형 목차를 보여준다. 얇은 선만 쓰는 사이드바와 구분되도록 배경·
+   그림자·번호 매기기를 쓴 문서형(Notion/Confluence류) 목차로 디자인한다(2026-09-21). */
+.toc-inline {
+  display: none;
+  margin: 0 0 32px;
+  padding: 18px 22px;
+  background: var(--surface-muted);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.toc-inline-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.toc-inline-summary::-webkit-details-marker {
+  display: none;
+}
+
+.toc-inline-summary::after {
+  content: "\25BE";
+  color: var(--text-tertiary);
+  transition: transform 0.15s ease;
+}
+
+.toc-inline[open] .toc-inline-summary::after {
+  transform: rotate(180deg);
+}
+
+.toc-inline-count {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.toc-inline-list {
+  list-style: decimal;
+  margin: 16px 0 0;
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toc-inline-list li.sub {
+  list-style: none;
+  margin-left: 4px;
+}
+
+.toc-inline-list a {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.toc-inline-list li.sub a {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.toc-inline-list a:hover {
+  color: var(--brand-red);
+}
+
 /* ---------- 시그니처 ④: 풀쿼트/콜아웃 (Confluence 정보 패널 컨버터 결과물) ---------- */
 .pullquote {
   max-width: 936px;
@@ -1129,15 +1201,26 @@ footer.site-footer {
 /* 본문 컬럼이 936px, 목차 280px, 간격 64px로(2026-09-18 사내 검토 가이드 반영) 그리드 전체
    폭이 1280px다. .wrap(1340px) 안에서 이만큼의 폭이 나오려면 뷰포트가 최소
    1280+48(.wrap 좌우 패딩)=1328px 이상이어야 한다 — 그보다 좁은 화면에서는 목차가 놓일
-   자리가 없으므로 본문만 남기고 숨긴다. */
+   자리가 없으므로 본문만 남기고 숨긴다. 사이드바 목차 대신 본문 위에 카드형 목차(.toc-inline,
+   2026-09-21)를 보여준다. .no-toc는 ".article-layout.no-toc"가 ".article-layout"보다
+   선택자 우선순위가 높아 이 블록의 max-width만으로는 덮어써지지 않으므로 별도로 명시한다
+   — 안 그러면 이 구간(860~1340px)에서 목차 있는 글과 없는 글의 폭 기준이 다시 어긋난다. */
 @media (max-width: 1340px) {
   .article-layout {
     grid-template-columns: 1fr;
     max-width: 936px;
   }
 
+  .article-layout.no-toc {
+    max-width: 936px;
+  }
+
   .toc {
     display: none;
+  }
+
+  .toc-inline {
+    display: block;
   }
 }
 
