@@ -797,13 +797,14 @@ a {
 /* 4종 콜아웃(안내/참고/주의/팁)을 색으로 구분한다 — 예전엔 warning만 배경색이 달라 나머지
    3종이 전부 같은 회색으로 보였다. @sfood/ui 토큰 팩키지에 초록/노랑 계열 옅은 틴트 토큰이
    없어(파랑만 --blue-50/100 존재), 하드코딩 hex 대신 상태 토큰(--color-info/--color-success)을
-   color-mix로 옅게 섞어 배경을 만든다 — 토큰 값이 바뀌면 같이 따라간다(2026-09-21). */
+   color-mix로 옅게 섞어 배경을 만든다 — 토큰 값이 바뀌면 같이 따라간다(2026-09-21).
+   좌측 컬러 라인(border-left)은 AI 생성 UI에서 남용되는 안티패턴이라는 피드백(2026-09-21)으로
+   제거했다 — 대신 라벨 앞 아이콘을 원형 배지로 만들어(자체 틴트 배경) 색을 구분한다. */
 .viewer-panel {
   max-width: 936px;
   margin: 28px auto;
-  padding: 20px 24px;
+  padding: 18px 22px;
   background: var(--surface-muted);
-  border-left: 4px solid var(--color-border-strong);
   border-radius: var(--radius-card);
   font-size: 14px;
   color: var(--text-secondary);
@@ -813,41 +814,53 @@ a {
 .viewer-panel strong {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   color: var(--text-primary);
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   font-size: 13px;
+}
+
+.viewer-panel strong::before {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 12px;
 }
 
 .viewer-panel-info {
   background: color-mix(in srgb, var(--color-info) 8%, var(--surface));
-  border-left-color: var(--color-info);
 }
 
 .viewer-panel-info strong::before {
   content: "\2139\FE0F";
+  background: color-mix(in srgb, var(--color-info) 22%, var(--surface));
 }
 
 .viewer-panel-tip {
   background: color-mix(in srgb, var(--color-success) 8%, var(--surface));
-  border-left-color: var(--color-success);
 }
 
 .viewer-panel-tip strong::before {
   content: "\1F4A1";
+  background: color-mix(in srgb, var(--color-success) 22%, var(--surface));
 }
 
 .viewer-panel-note strong::before {
   content: "\1F4DD";
+  background: var(--surface);
 }
 
 .viewer-panel-warning {
   background: var(--brand-red-tint);
-  border-left-color: var(--brand-red);
 }
 
 .viewer-panel-warning strong::before {
   content: "\26A0\FE0F";
+  background: color-mix(in srgb, var(--brand-red) 22%, var(--surface));
 }
 
 /* ---------- 펼치기(expand) 매크로 → <details>/<summary>(converter.ts) — 사이드/모바일
