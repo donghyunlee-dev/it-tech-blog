@@ -1,5 +1,5 @@
 const MACRO_REGEX =
-  /<ac:structured-macro ac:name="(code|info|note|warning|tip)"[^>]*>([\s\S]*?)<\/ac:structured-macro>/g;
+  /<ac:structured-macro ac:name="(code|info|note|warning|tip|expand)"[^>]*>([\s\S]*?)<\/ac:structured-macro>/g;
 
 const PANEL_LABEL: Record<string, string> = {
   info: "안내",
@@ -78,6 +78,9 @@ async function convertMacros(storageHtml: string): Promise<string> {
     if (name === "code") {
       const language = extractMacroParam(body, "language");
       replacement = await highlightCode(extractCodeBody(body), language);
+    } else if (name === "expand") {
+      const title = extractMacroParam(body, "title") ?? "더 보기";
+      replacement = `<details class="viewer-expand"><summary>${escapeHtml(title)}</summary>${extractRichTextBody(body)}</details>`;
     } else {
       replacement = `<div class="viewer-panel viewer-panel-${name}"><strong>${PANEL_LABEL[name]}</strong>${extractRichTextBody(body)}</div>`;
     }
