@@ -462,8 +462,8 @@ a {
 /* 2026-09-18: IT 기술 블로그 특성상 코드 블록·스크린샷·표처럼 폭이 필요한 콘텐츠가 자주
    올라온다. 처음엔 참고 블로그(inpa.tistory.com, 본문 768px) 수준으로 넓혔었는데, 사내 검토
    가이드(gpt 추천안)에서 Tech Blog 특성상 760~800px로도 부족하다고 판단해 936px로 재조정했다
-   — 아래 .article-layout 그리드 컬럼 폭, .pullquote/.viewer-panel/.related-section/
-   .comment-section도 전부 같은 값으로 맞춘다(폭 기준 통일 원칙 유지). */
+   — 아래 .article-layout 그리드 컬럼 폭, .article-body blockquote/.viewer-panel/
+   .related-section/.comment-section도 전부 같은 값으로 맞춘다(폭 기준 통일 원칙 유지). */
 .article-body {
   max-width: 936px;
   margin: 0 auto;
@@ -531,12 +531,28 @@ a {
   margin: 0;
 }
 
+/* 시그니처 ④(풀쿼트) 디자인을 실제 인용문에 그대로 옮긴다 — 예전 .pullquote 클래스는
+   Confluence 인용문을 겨냥해 만들었지만 컨버터가 그 클래스를 한 번도 만든 적이 없어(항상
+   순정 <blockquote>만 나옴) 죽은 스타일이었다. 새 색을 만드는 대신 이미 승인된 시그니처
+   값을 그대로 재사용한다(2026-09-21). */
 .article-body blockquote {
-  margin: 28px 0;
-  padding: 4px 0 4px 20px;
-  border-left: 3px solid var(--border-hairline);
-  color: var(--text-secondary);
-  font-style: normal;
+  max-width: 936px;
+  margin: 32px auto;
+  padding: 4px 0 4px 24px;
+  border-left: 3px solid var(--brand-red);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+.article-body blockquote p {
+  margin: 0 0 8px;
+}
+
+.article-body blockquote p:last-child {
+  margin-bottom: 0;
 }
 
 .article-body a {
@@ -774,19 +790,7 @@ a {
   color: var(--brand-red);
 }
 
-/* ---------- 시그니처 ④: 풀쿼트/콜아웃 (Confluence 정보 패널 컨버터 결과물) ---------- */
-.pullquote {
-  max-width: 936px;
-  margin: 36px auto;
-  padding: 4px 0 4px 24px;
-  border-left: 3px solid var(--brand-red);
-  font-size: 20px;
-  font-weight: 600;
-  letter-spacing: -0.2px;
-  line-height: 1.5;
-  color: var(--text-primary);
-}
-
+/* ---------- 시그니처 ④: 콜아웃 (Confluence 정보 패널 컨버터 결과물) ---------- */
 /* 4종 콜아웃(안내/참고/주의/팁)을 색으로 구분한다 — 예전엔 warning만 배경색이 달라 나머지
    3종이 전부 같은 회색으로 보였다. @sfood/ui 토큰 팩키지에 초록/노랑 계열 옅은 틴트 토큰이
    없어(파랑만 --blue-50/100 존재), 하드코딩 hex 대신 상태 토큰(--color-info/--color-success)을
@@ -1257,7 +1261,12 @@ footer.site-footer {
   line-height: 1.6;
 }
 
+/* display:block + overflow-x:auto를 table 자체에 줘서, 래퍼 <div>를 추가하지 않고도(컨버터
+   출력 구조를 안 건드리고) 좁은 화면에서 표만 가로 스크롤되게 한다 — 흔히 쓰는 방식이고,
+   table의 내부 thead/tbody/tr/td는 그대로 표 레이아웃으로 렌더링된다(2026-09-21). */
 .viewer-content table.viewer-table {
+  display: block;
+  overflow-x: auto;
   border-collapse: collapse;
   width: 100%;
   margin: 16px 0;
@@ -1268,6 +1277,17 @@ footer.site-footer {
   border: 1px solid var(--border-hairline);
   padding: 8px 12px;
   text-align: left;
+}
+
+.viewer-content table.viewer-table th {
+  background: var(--surface-muted);
+  color: var(--text-primary);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.viewer-content table.viewer-table tbody tr:nth-child(even) td {
+  background: rgba(0, 0, 0, 0.02);
 }
 
 .viewer-code {
