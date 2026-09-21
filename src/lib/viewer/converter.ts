@@ -91,8 +91,17 @@ async function convertMacros(storageHtml: string): Promise<string> {
   return result;
 }
 
+/** 표를 `.viewer-table-wrap`(overflow-x:auto)으로 감싸 좁은 화면에서 표만 가로 스크롤되게
+ *  한다. 이전엔 <table> 자체에 display:block+overflow-x:auto를 직접 줬는데, display:block이
+ *  브라우저의 표 자동 폭 분배를 깨버려(display:table이 아니면 열 폭이 내용 크기로만 줄어듦)
+ *  내용이 적은 표가 본문 폭을 다 못 채우고 작게 나오는 회귀가 있었다(2026-09-21 발견 — 실측
+ *  결과 표 박스 자체는 936px인데 마지막 셀 오른쪽 끝은 237px에서 끝남). 래퍼로 스크롤을
+ *  분리하고 <table>은 평범한 display:table로 되돌려 폭 분배를 정상화한다. */
 function convertTables(html: string): string {
-  return html.replace(/<table(?![^>]*class=)/g, '<table class="viewer-table"');
+  return html.replace(/<table(?![^>]*class=)[^>]*>[\s\S]*?<\/table>/g, (match) => {
+    const withClass = match.replace(/<table/, '<table class="viewer-table"');
+    return `<div class="viewer-table-wrap">${withClass}</div>`;
+  });
 }
 
 /** Confluence 첨부 이미지(ac:image + ri:attachment)와 외부 URL 이미지(ac:image + ri:url)를 <img>로

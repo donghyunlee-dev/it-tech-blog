@@ -1264,15 +1264,22 @@ footer.site-footer {
   line-height: 1.6;
 }
 
-/* display:block + overflow-x:auto를 table 자체에 줘서, 래퍼 <div>를 추가하지 않고도(컨버터
-   출력 구조를 안 건드리고) 좁은 화면에서 표만 가로 스크롤되게 한다 — 흔히 쓰는 방식이고,
-   table의 내부 thead/tbody/tr/td는 그대로 표 레이아웃으로 렌더링된다(2026-09-21). */
-.viewer-content table.viewer-table {
-  display: block;
+/* 표 자체가 아니라 이 래퍼(.viewer-table-wrap, converter.ts convertTables)에
+   overflow-x:auto를 줘서 좁은 화면에서 표만 가로 스크롤되게 한다 — <table>에 직접
+   display:block을 주면 브라우저의 표 자동 폭 분배가 깨져(display:table이 아니게 되어) 내용이
+   적은 셀은 폭이 그대로 줄어들고 width:100%가 무의미해지는 회귀가 있었다(2026-09-21 발견 및
+   수정 — 실측: 표 박스는 936px인데 마지막 셀은 237px에서 끝남). display:table을 유지해야
+   width:100%가 컬럼에 실제로 분배된다. */
+.viewer-table-wrap {
   overflow-x: auto;
+  margin: 16px 0;
+}
+
+.viewer-content table.viewer-table {
+  display: table;
   border-collapse: collapse;
   width: 100%;
-  margin: 16px 0;
+  margin: 0;
 }
 
 .viewer-content table.viewer-table th,
