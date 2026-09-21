@@ -139,22 +139,32 @@ function convertTables(html: string): string {
  *  서버가 인증을 대신 처리하는 프록시 라우트(/api/attachments/[pageId]/[filename])를 가리키게
  *  한다(src/app/api/attachments/[pageId]/[filename]/route.ts 참고). stripUnmappedMacros보다
  *  먼저 실행해야 한다 — 그쪽이 먼저 돌면 ac:image/ri:attachment 태그가 정보 없이 사라진다. */
+/** Confluence 에디터의 이미지 "설명"(캡션) 입력이 storage format에는 별도 캡션 요소가 아니라
+ *  ac:image의 ac:alt 속성으로 저장된다(실측 확인 — ac:caption 요소는 이 문서에 없었음). alt
+ *  속성에만 넣으면 화면(스크린리더 제외)에는 안 보여 "캡션 정보가 있는데 화면에 안 나온다"는
+ *  피드백(2026-09-21)이 있었다 — <figure>/<figcaption>으로 화면에도 보이게 하고, alt도 그대로
+ *  유지해 접근성은 지킨다. */
 function convertImages(html: string, pageId: string): string {
   return html.replace(/<ac:image[^>]*>([\s\S]*?)<\/ac:image>/g, (fullMatch, inner: string) => {
     const attachmentMatch = inner.match(/<ri:attachment ri:filename="([^"]+)"/);
     const urlMatch = inner.match(/<ri:url ri:value="([^"]+)"/);
     const altMatch = fullMatch.match(/<ac:image[^>]*\sac:alt="([^"]*)"/);
-    const alt = altMatch ? escapeHtml(altMatch[1]) : "";
+    const caption = altMatch ? escapeHtml(altMatch[1]) : "";
 
+    let src: string | null = null;
     if (attachmentMatch) {
-      const src = `/api/attachments/${pageId}/${encodeURIComponent(attachmentMatch[1])}`;
-      return `<img src="${src}" alt="${alt}" loading="lazy" />`;
+      src = `/api/attachments/${pageId}/${encodeURIComponent(attachmentMatch[1])}`;
+    } else if (urlMatch) {
+      src = escapeHtml(urlMatch[1]);
     }
-    if (urlMatch) {
-      return `<img src="${escapeHtml(urlMatch[1])}" alt="${alt}" loading="lazy" />`;
-    }
-    // 첨부/외부 URL 어느 쪽도 못 찾으면(예: 삭제된 첨부) 빈 alt 텍스트만 남기고 이미지는 생략한다.
-    return "";
+
+    // 첨부/외부 URL 어느 쪽도 못 찾으면(예: 삭제된 첨부) 이미지 자체를 생략한다.
+    if (!src) return "";
+
+    const img = `<img src="${src}" alt="${caption}" loading="lazy" />`;
+    if (!caption) return img;
+
+    return `<figure class="viewer-figure">${img}<figcaption>${caption}</figcaption></figure>`;
   });
 }
 

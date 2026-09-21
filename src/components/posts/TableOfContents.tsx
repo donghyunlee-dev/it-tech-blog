@@ -102,9 +102,9 @@ export function TableOfContents({ headings }: { headings: TocHeading[] }) {
 }
 
 /** 사이드바 목차(.toc)가 자리 없어 숨는 1340px 이하 화면 전용. 본문보다 먼저, 제목 바로
- *  아래에 문서형(카드+번호 매기기) 목차로 보여준다 — 사이드바의 얇은 선 스타일과는
- *  의도적으로 다른 디자인을 써서 "같은 목차의 축소판"이 아니라 별개의 문서 내비게이션처럼
- *  읽히게 한다. */
+ *  아래에 접이식으로 보여준다. 번호 매긴 카드형으로 만들었더니 코드 블록(줄번호)처럼 보인다는
+ *  피드백(2026-09-21)으로, 사이드바와 같은 번호 없는 얇은 선 스타일로 통일했다 — 접고 펼치는
+ *  동작만 좁은 화면 전용으로 남는다. */
 export function MobileTableOfContents({ headings }: { headings: TocHeading[] }) {
   if (headings.length === 0) return null;
 
@@ -114,13 +114,13 @@ export function MobileTableOfContents({ headings }: { headings: TocHeading[] }) 
         <span className="kicker">목차</span>
         <span className="toc-inline-count">{headings.length}개 항목</span>
       </summary>
-      <ol className="toc-inline-list">
+      <ul className="toc-inline-list">
         {headings.map((heading) => (
           <li key={heading.id} className={heading.level === 3 ? "sub" : ""}>
             <a href={`#${heading.id}`}>{heading.text}</a>
           </li>
         ))}
-      </ol>
+      </ul>
     </details>
   );
 }
