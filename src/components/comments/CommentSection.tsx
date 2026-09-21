@@ -44,7 +44,9 @@ interface CommentSectionProps {
  *
  * "로그인 후 댓글을 남기거나" 문구 아래에 있던 "로그인"/"로그아웃" 텍스트 링크(신원 전환)는
  * 제거했다 — 게스트 작성 화면에서는 의미가 없고, 로그인 사용자에게는 로그아웃 버튼만 남긴다
- * (이 앱에서 로그아웃할 수 있는 유일한 경로라 완전히 없애지는 않았다).
+ * (이 앱에서 로그아웃할 수 있는 유일한 경로라 완전히 없애지는 않았다). 2026-09-21: 그 로그아웃
+ * 버튼이 필드 두 개 아래에 밑줄 텍스트 링크 하나로만 있어 존재감이 약하다는 피드백으로,
+ * 로그인 상태를 실제로 보여주는 잠긴 이메일 입력 라벨 줄로 옮기고 외곽선 pill 버튼으로 바꿨다.
  */
 type Stage = "gate" | "compose";
 
@@ -93,6 +95,16 @@ function storePendingComment(draft: PendingCommentDraft): boolean {
 
   document.cookie = `${PENDING_COMMENT_COOKIE}=${encoded}; path=/; max-age=150; SameSite=Lax`;
   return true;
+}
+
+function LogoutIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  );
 }
 
 function countAll(nodes: CommentNode[]): number {
@@ -260,9 +272,24 @@ export function CommentSection({
       {stage === "compose" && (
         <div className="comment-identity-fields">
           <div className="identity-field-group">
-            <label className="field-label" htmlFor="comment-email">
-              이메일
-            </label>
+            <div className="identity-field-header">
+              <label className="field-label" htmlFor="comment-email">
+                이메일
+              </label>
+              {/* 로그인 상태를 보여주는 건 잠긴 이 입력 자체라, 로그아웃도 바로 옆에 둔다 —
+                  게스트 작성 화면(비로그인)에는 신원 전환 개념이 없어 두지 않는다. */}
+              {verified && (
+                <button
+                  type="button"
+                  className="logout-button"
+                  onClick={resetToGate}
+                  disabled={switching}
+                >
+                  <LogoutIcon />
+                  로그아웃
+                </button>
+              )}
+            </div>
             <Input
               id="comment-email"
               type="email"
@@ -284,20 +311,6 @@ export function CommentSection({
               onChange={(event) => setName(event.target.value)}
             />
           </div>
-          {/* 로그인 사용자만 로그아웃 경로가 필요하다 — 게스트 작성 화면에는 신원 전환
-              링크를 두지 않는다(이미 "비로그인"을 선택한 뒤라 의미가 없다). */}
-          {verified && (
-            <div className="identity-field-footer">
-              <button
-                type="button"
-                className="switch-identity-link"
-                onClick={resetToGate}
-                disabled={switching}
-              >
-                로그아웃
-              </button>
-            </div>
-          )}
         </div>
       )}
 
