@@ -589,6 +589,17 @@ a {
   display: none;
 }
 
+/* 첨부 이미지(converter.ts convertImages) — 본문 폭을 넘지 않고, 카드처럼 살짝 분리되어
+   보이도록 라운드만 준다(스크린샷/다이어그램이 많은 기술 블로그 특성상 그림자는 과할 수 있어
+   생략). */
+.article-body img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 28px auto;
+  border-radius: var(--radius-badge);
+}
+
 /* ---------- 목차(TOC) — 본문의 h2/h3에서 자동 추출, 본문 오른쪽 여백에 배치.
    히어로와 같은 원칙으로 박스·배경 없이 얇은 선 + 텍스트로만 구성한다
    (docs/guide/mockups/toc-sidebar-proposal.html 참고). 헤딩이 없는 글은 .no-toc가 붙어
